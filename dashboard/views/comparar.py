@@ -19,7 +19,7 @@ def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
 def render(df: pd.DataFrame):
     """Render the Comparison page with enhanced UI."""
 
-    st.markdown("### 🎯 Select Restaurants to Compare")
+    st.markdown("### Select Restaurants to Compare")
 
     # Get unique restaurants
     restaurants = df.groupby(["restaurant_id", "restaurant_name"]).agg({
@@ -32,19 +32,19 @@ def render(df: pd.DataFrame):
     selected_restaurants = st.multiselect(
         "Choose restaurants to compare (2-5):",
         options=restaurants["restaurant_id"].unique(),
-        format_func=lambda x: f"⭐ {restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}",
+        format_func=lambda x: f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}",
         max_selections=5
     )
 
     if len(selected_restaurants) < 2:
-        st.info("👆 Please select at least 2 restaurants to compare.")
+        st.info("Please select at least 2 restaurants to compare.")
         return
 
     # Filter data for selected restaurants
     compare_df = df[df["restaurant_id"].isin(selected_restaurants)]
 
     # Restaurant info cards
-    st.markdown("#### 📋 Restaurant Information")
+    st.markdown("#### Restaurant Information")
 
     info_cols = ["restaurant_name", "category", "price_range", "overall_rating"]
     info_df = compare_df.groupby("restaurant_id")[info_cols].first().reset_index()[info_cols]
@@ -54,12 +54,12 @@ def render(df: pd.DataFrame):
         info_df,
         use_container_width=True,
         hide_index=True,
-        column_config={"Rating": st.column_config.NumberColumn(format="%.2f ⭐")}
+        column_config={"Rating": st.column_config.NumberColumn(format="%.2f ")}
     )
 
     # Charts
     st.markdown("---")
-    st.markdown("#### 📊 Rating Comparison")
+    st.markdown("#### Rating Comparison")
 
     col1, col2 = st.columns(2)
 
@@ -149,7 +149,7 @@ def render(df: pd.DataFrame):
 
     # Review count
     st.markdown("---")
-    st.markdown("#### 📝 Review Count")
+    st.markdown("#### Review Count")
 
     review_counts = compare_df.groupby("restaurant_id").size().reset_index(name="review_count")
     review_counts = review_counts.merge(
@@ -180,7 +180,7 @@ def render(df: pd.DataFrame):
 
     # Sample reviews
     st.markdown("---")
-    st.markdown("#### 💬 Sample Reviews")
+    st.markdown("#### Sample Reviews")
 
     cols = st.columns(3)
 
@@ -189,7 +189,7 @@ def render(df: pd.DataFrame):
         rest_reviews = compare_df[compare_df["restaurant_id"] == rest_id]["review_text"].dropna().head(2)
 
         with cols[i]:
-            st.markdown(f"**📍 {rest_name}**")
+            st.markdown(f"**{rest_name}**")
             for review in rest_reviews:
                 with st.expander("View review"):
                     st.write(review[:200] + "..." if len(str(review)) > 200 else review)

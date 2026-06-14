@@ -12,12 +12,12 @@ from dashboard.config import SENTIMENT_COLORS
 def render(df: pd.DataFrame):
     """Render the Sentiment Analysis page with enhanced UI."""
 
-    st.markdown("### 😊 Sentiment Distribution Overview")
+    st.markdown("### Sentiment Distribution Overview")
 
     sentiment_cols = [col for col in df.columns if col.startswith("sentiment_") and col.endswith("_score")]
 
     if not sentiment_cols:
-        st.warning("⚠️ Sentiment analysis not yet performed.")
+        st.warning("Sentiment analysis not yet performed.")
         return
 
     # Calculate overall sentiment
@@ -40,7 +40,7 @@ def render(df: pd.DataFrame):
         st.markdown(f"""
         <div style="background-color: rgba(40, 167, 69, 0.15); padding: 16px; border-radius: 12px; border-left: 4px solid #28a745;">
             <h2 style="margin: 0; color: #28a745;">{positive_pct:.1f}%</h2>
-            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Positive 😊</p>
+            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Positive </p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -48,7 +48,7 @@ def render(df: pd.DataFrame):
         st.markdown(f"""
         <div style="background-color: rgba(255, 193, 7, 0.15); padding: 16px; border-radius: 12px; border-left: 4px solid #ffc107;">
             <h2 style="margin: 0; color: #ffc107;">{neutral_pct:.1f}%</h2>
-            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Neutral 😐</p>
+            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Neutral </p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -56,7 +56,7 @@ def render(df: pd.DataFrame):
         st.markdown(f"""
         <div style="background-color: rgba(220, 53, 69, 0.15); padding: 16px; border-radius: 12px; border-left: 4px solid #dc3545;">
             <h2 style="margin: 0; color: #dc3545;">{negative_pct:.1f}%</h2>
-            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Negative 😞</p>
+            <p style="margin: 4px 0 0 0; color: #A0AEC0;">Negative </p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -76,7 +76,7 @@ def render(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 📊 Sentiment by Aspect")
+        st.markdown("#### Sentiment by Aspect")
 
         aspects = ["comida", "servicio", "precio", "ambiente"]
         aspect_means = {}
@@ -107,7 +107,7 @@ def render(df: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("#### 🥧 Sentiment Distribution")
+        st.markdown("#### Sentiment Distribution")
 
         fig = go.Figure(data=[go.Pie(
             labels=sentiment_counts.index,
@@ -127,7 +127,7 @@ def render(df: pd.DataFrame):
     # Sentiment heatmap by category
     if "category" in df.columns:
         st.markdown("---")
-        st.markdown("### 🔥 Sentiment Heatmap by Category")
+        st.markdown("### Sentiment Heatmap by Category")
 
         categories = df["category"].value_counts().head(8).index.tolist()
 
@@ -164,12 +164,12 @@ def render(df: pd.DataFrame):
 
     # Top reviews
     st.markdown("---")
-    st.markdown("### 💬 Top Reviews")
+    st.markdown("### Top Reviews")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### ✅ Most Positive Reviews")
+        st.markdown("#### Most Positive Reviews")
 
         positive_df = df[df["overall_sentiment"] > 0.3].nlargest(5, "overall_sentiment")
 
@@ -180,14 +180,14 @@ def render(df: pd.DataFrame):
 
             st.markdown(f"""
             <div style="background-color: rgba(40, 167, 69, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #28a745;">
-                <strong style="color: #28a745;">🏆 {restaurant}</strong>
+                <strong style="color: #28a745;">{restaurant}</strong>
                 <span style="color: #A0AEC0; float: right;">Score: {sentiment:.2f}</span>
                 <p style="margin: 8px 0 0 0; color: #FAFAFA;">"{review}..."</p>
             </div>
             """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("#### ⚠️ Most Negative Reviews")
+        st.markdown("#### Most Negative Reviews")
 
         negative_df = df[df["overall_sentiment"] < -0.3].nsmallest(5, "overall_sentiment")
 
@@ -198,7 +198,7 @@ def render(df: pd.DataFrame):
 
             st.markdown(f"""
             <div style="background-color: rgba(220, 53, 69, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #dc3545;">
-                <strong style="color: #dc3545;">⚠️ {restaurant}</strong>
+                <strong style="color: #dc3545;">{restaurant}</strong>
                 <span style="color: #A0AEC0; float: right;">Score: {sentiment:.2f}</span>
                 <p style="margin: 8px 0 0 0; color: #FAFAFA;">"{review}..."</p>
             </div>

@@ -13,17 +13,17 @@ from dashboard.config import CLUSTER_COLORS
 def render(df: pd.DataFrame):
     """Render the Clustering page with enhanced UI."""
 
-    st.markdown("### 🎯 Restaurant Clusters")
+    st.markdown("### Restaurant Clusters")
 
     if "cluster" not in df.columns:
-        st.warning("⚠️ Clustering not yet performed.")
+        st.warning("Clustering not yet performed.")
         return
 
     # Cluster summary cards
     cluster_counts = df.groupby("cluster")["restaurant_id"].nunique().reset_index()
     cluster_counts.columns = ["Cluster", "Count"]
 
-    st.markdown("#### 📊 Cluster Distribution")
+    st.markdown("#### Cluster Distribution")
 
     cols = st.columns(len(cluster_counts))
 
@@ -43,7 +43,7 @@ def render(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 🥧 Cluster Size Distribution")
+        st.markdown("#### Cluster Size Distribution")
 
         fig = go.Figure(data=[go.Pie(
             labels=[f"Cluster {int(c)}" for c in cluster_counts["Cluster"]],
@@ -61,7 +61,7 @@ def render(df: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("#### 📈 Average Rating by Cluster")
+        st.markdown("#### Average Rating by Cluster")
 
         # Calculate cluster statistics
         cluster_stats = df.groupby("cluster").agg({
@@ -93,7 +93,7 @@ def render(df: pd.DataFrame):
 
     # Cluster profiles table
     st.markdown("---")
-    st.markdown("#### 📋 Cluster Profiles")
+    st.markdown("#### Cluster Profiles")
 
     cluster_profiles = []
 
@@ -125,7 +125,7 @@ def render(df: pd.DataFrame):
 
     # Top restaurants per cluster
     st.markdown("---")
-    st.markdown("#### 🏆 Top Restaurants per Cluster")
+    st.markdown("#### Top Restaurants per Cluster")
 
     selected_cluster = st.selectbox(
         "Select a cluster:",
@@ -146,12 +146,12 @@ def render(df: pd.DataFrame):
             top_restaurants,
             use_container_width=True,
             hide_index=True,
-            column_config={"Rating": st.column_config.NumberColumn(format="%.2f ⭐")}
+            column_config={"Rating": st.column_config.NumberColumn(format="%.2f ")}
         )
 
     # Scatter plot
     st.markdown("---")
-    st.markdown("#### 🗺️ Restaurant Map (Rating vs Sentiment)")
+    st.markdown("#### Restaurant Map (Rating vs Sentiment)")
 
     if "overall_sentiment_score" not in df.columns:
         sentiment_cols = [col for col in df.columns if col.startswith("sentiment_") and col.endswith("_score")]

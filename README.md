@@ -1,4 +1,4 @@
-# 🍽️ Plataforma de Análisis de Reseñas de Restaurantes — Panamá
+# Plataforma de Análisis de Reseñas de Restaurantes — Panamá
 
 Proyecto Integrador (Segundo Parcial) — **Grupo 5**
 
@@ -10,25 +10,25 @@ sistema de recomendación.
 
 ---
 
-## 📑 Tabla de contenidos
+## Tabla de contenidos
 
-1. [Problemática](#-problemática)
-2. [Características principales](#-características-principales)
-3. [Arquitectura y pipeline](#-arquitectura-y-pipeline)
-4. [Stack tecnológico](#-stack-tecnológico)
-5. [Fuentes de datos](#-fuentes-de-datos)
-6. [Estructura del repositorio](#-estructura-del-repositorio)
-7. [Instalación](#-instalación)
-8. [Uso](#-uso)
-9. [Componentes en detalle](#-componentes-en-detalle)
-10. [Testing](#-testing)
-11. [Cumplimiento de la rúbrica](#-cumplimiento-de-la-rúbrica)
-12. [Limitaciones y notas](#-limitaciones-y-notas)
-13. [Equipo y licencia](#-equipo-y-licencia)
+1. [Problemática](#problemática)
+2. [Características principales](#características-principales)
+3. [Arquitectura y pipeline](#arquitectura-y-pipeline)
+4. [Stack tecnológico](#stack-tecnológico)
+5. [Fuentes de datos](#fuentes-de-datos)
+6. [Estructura del repositorio](#estructura-del-repositorio)
+7. [Instalación](#instalación)
+8. [Uso](#uso)
+9. [Componentes en detalle](#componentes-en-detalle)
+10. [Testing](#testing)
+11. [Cumplimiento de la rúbrica](#cumplimiento-de-la-rúbrica)
+12. [Limitaciones y notas](#limitaciones-y-notas)
+13. [Equipo y licencia](#equipo-y-licencia)
 
 ---
 
-## 🎯 Problemática
+## Problemática
 
 Elegir un restaurante en Ciudad de Panamá implica comparar opiniones dispersas en
 múltiples plataformas, sin una vista unificada que separe **qué** se valora
@@ -41,21 +41,21 @@ usuario.
 
 ---
 
-## ✨ Características principales
+## Características principales
 
-- 🔎 **Pipeline ETL** reproducible con **2 fuentes de datos reales**.
-- 🧠 **Análisis de sentimiento por aspecto** (comida, servicio, precio, ambiente)
+- **Pipeline ETL** reproducible con **2 fuentes de datos reales**.
+- **Análisis de sentimiento por aspecto** (comida, servicio, precio, ambiente)
   con un clasificador léxico español/inglés (sin API key) y soporte opcional para
   LLM (Google Gemini).
-- 🤖 **Clustering K-Means** de restaurantes con selección de *k* por *silhouette
+- **Clustering K-Means** de restaurantes con selección de *k* por *silhouette
   score*.
-- ⭐ **Sistema de recomendación** basado en contenido (preferencias + sentimiento).
-- 📊 **Dashboard interactivo** de 6 páginas con navegación nativa de Streamlit.
-- ✅ **130 pruebas unitarias** (pytest).
+- **Sistema de recomendación** basado en contenido (preferencias + sentimiento).
+- **Dashboard interactivo** de 6 páginas con navegación nativa de Streamlit.
+- **130 pruebas unitarias** (pytest).
 
 ---
 
-## 🏗 Arquitectura y pipeline
+## Arquitectura y pipeline
 
 ```
 ┌──────────────────────────────┐
@@ -88,7 +88,7 @@ Todo el pipeline se ejecuta con un solo comando: `python run_pipeline.py`.
 
 ---
 
-## 🧰 Stack tecnológico
+## Stack tecnológico
 
 | Componente            | Tecnología                          |
 |-----------------------|-------------------------------------|
@@ -102,7 +102,7 @@ Todo el pipeline se ejecuta con un solo comando: `python run_pipeline.py`.
 
 ---
 
-## 🌐 Fuentes de datos
+## Fuentes de datos
 
 Dos fuentes **reales e independientes** de reseñas de restaurantes en Ciudad de Panamá:
 
@@ -111,7 +111,7 @@ Dos fuentes **reales e independientes** de reseñas de restaurantes en Ciudad de
 | **Degusta Panamá** | https://www.degustapanama.com/ | Scraping de microdatos `schema.org` (`itemprop="reviewBody"`) con `requests` + `BeautifulSoup` | 59 |
 | **RestaurantGuru** | https://restaurantguru.com/Panama-City | Scraping de reseñas agregadas (principalmente de Google) | 24 |
 
-> **⚠️ Nota sobre Tripadvisor:** la segunda fuente planeada originalmente
+> **Nota sobre Tripadvisor:** la segunda fuente planeada originalmente
 > (`tripadvisor.com/Restaurants-g294480-Panama_City_Panama_Province.html`)
 > responde **HTTP 403 + captcha** a los scrapers, por lo que se reemplazó por
 > **RestaurantGuru**. El scraper de Tripadvisor se conserva en
@@ -119,7 +119,7 @@ Dos fuentes **reales e independientes** de reseñas de restaurantes en Ciudad de
 
 ---
 
-## 📁 Estructura del repositorio
+## Estructura del repositorio
 
 ```
 restaurant-sentiment-analysis/
@@ -159,7 +159,7 @@ restaurant-sentiment-analysis/
 
 ---
 
-## ⚙️ Instalación
+## Instalación
 
 Requiere **Python 3.10+**.
 
@@ -187,7 +187,7 @@ copy .env.example .env      # Windows  (cp en Linux/macOS)
 
 ---
 
-## 🚀 Uso
+## Uso
 
 El dataset procesado **ya viene versionado** en `data/`, así que el dashboard
 funciona de inmediato:
@@ -198,7 +198,7 @@ streamlit run dashboard/app.py
 
 Luego abrí **http://localhost:8501** en el navegador.
 
-> 💡 Si Streamlit dice que el puerto está ocupado y abre otro (8502, 8503…),
+> Si Streamlit dice que el puerto está ocupado y abre otro (8502, 8503…),
 > cerrá las instancias previas o entrá al puerto que indique la consola.
 
 ### Regenerar los datos
@@ -233,7 +233,7 @@ streamlit run dashboard/app.py
 
 ---
 
-## 🔬 Componentes en detalle
+## Componentes en detalle
 
 ### 1. Pipeline ETL (`src/ingestion`, `src/preprocessing`)
 - **Extract:** scrapers de Degusta y RestaurantGuru → CSV por fuente.
@@ -274,16 +274,16 @@ Seis páginas con navegación nativa (`st.navigation`):
 
 | Página | Contenido |
 |--------|-----------|
-| 📊 **Overview** | KPIs, top 10 por rating, distribución de ratings/categorías/precios, sentimiento por aspecto |
-| 📍 **Comparar** | Comparación lado a lado (2–5 restaurantes) con radar de aspectos |
-| 😀 **Sentimiento** | Distribución de sentimiento, heatmap por categoría, mejores/peores reseñas |
-| 🎯 **Clustering** | Tamaño de clusters, perfiles, top por cluster, mapa rating vs. sentimiento |
-| ⭐ **Recomendaciones** | Formulario de preferencias + recomendaciones personalizadas |
-| 🔍 **Detalle** | Vista individual de un restaurante con reseñas filtrables por sentimiento |
+| **Overview** | KPIs, top 10 por rating, distribución de ratings/categorías/precios, sentimiento por aspecto |
+| **Comparar** | Comparación lado a lado (2–5 restaurantes) con radar de aspectos |
+| **Sentimiento** | Distribución de sentimiento, heatmap por categoría, mejores/peores reseñas |
+| **Clustering** | Tamaño de clusters, perfiles, top por cluster, mapa rating vs. sentimiento |
+| **Recomendaciones** | Formulario de preferencias + recomendaciones personalizadas |
+| **Detalle** | Vista individual de un restaurante con reseñas filtrables por sentimiento |
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Pruebas unitarias (rápidas)
@@ -298,7 +298,7 @@ engineering, sentimiento, clustering, recomendador y el pipeline.
 
 ---
 
-## 📊 Cumplimiento de la rúbrica
+## Cumplimiento de la rúbrica
 
 | Componente | Peso | Cómo se cumple |
 |------------|------|----------------|
@@ -309,7 +309,7 @@ engineering, sentimiento, clustering, recomendador y el pipeline.
 
 ---
 
-## ⚠️ Limitaciones y notas
+## Limitaciones y notas
 
 - **RestaurantGuru aplica rate limiting** (HTTP 503 tras varias solicitudes
   seguidas). El scraper reintenta con *backoff*; para más datos, conviene correrlo
@@ -320,7 +320,7 @@ engineering, sentimiento, clustering, recomendador y el pipeline.
 
 ---
 
-## 👥 Equipo y licencia
+## Equipo y licencia
 
 - **Grupo 5** — Plataforma de Análisis de Reseñas de Restaurantes
 - Licencia: **MIT**

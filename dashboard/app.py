@@ -26,7 +26,6 @@ from src.sentiment.aspect_scores import derive_aspect_sentiment_scores
 
 st.set_page_config(
     page_title="Restaurant Analyzer - Panama",
-    page_icon="🍽️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -51,7 +50,7 @@ def _render_no_data():
     """Show the onboarding message when no processed data is available."""
     st.markdown("""
     <div style="background-color: #1E2530; padding: 40px; border-radius: 12px; text-align: center;">
-        <h2 style="color: #FF6B6B;">⚠️ No Data Found</h2>
+        <h2 style="color: #FF6B6B;">No Data Found</h2>
         <p style="color: #A0AEC0; margin-top: 16px;">
             Please run the pipeline first to generate data.
         </p>
@@ -71,7 +70,7 @@ def _page(render_fn, title, subtitle):
 
         st.markdown(f"""
         <div style="margin-bottom: 24px;">
-            <h1 style="margin: 0;">🍽️ {title}</h1>
+            <h1 style="margin: 0;">{title}</h1>
             <p style="color: #A0AEC0; margin-top: 8px;">{subtitle}</p>
         </div>
         """, unsafe_allow_html=True)
@@ -90,29 +89,29 @@ SUBTITLE = "Análisis de sentimiento de restaurantes en Ciudad de Panamá"
 # Native multipage navigation. url_path values match tests/test_dashboard_e2e.py.
 PAGES = [
     st.Page(_page(overview.render, "Overview", SUBTITLE),
-            title="Overview", icon="📊", url_path="Overview", default=True),
+            title="Overview", url_path="Overview", default=True),
     st.Page(_page(comparar.render, "Comparar", SUBTITLE),
-            title="Comparar", icon="📍", url_path="Comparison"),
+            title="Comparar", url_path="Comparison"),
     st.Page(_page(sentimiento.render, "Sentimiento", SUBTITLE),
-            title="Sentimiento", icon="😀", url_path="Sentiment"),
+            title="Sentimiento", url_path="Sentiment"),
     st.Page(_page(clustering.render, "Clustering", SUBTITLE),
-            title="Clustering", icon="🎯", url_path="Clustering"),
+            title="Clustering", url_path="Clustering"),
     st.Page(_page(recomendaciones.render, "Recomendaciones", SUBTITLE),
-            title="Recomendaciones", icon="⭐", url_path="Recommendations"),
+            title="Recomendaciones", url_path="Recommendations"),
     st.Page(_page(detalle.render, "Detalle", SUBTITLE),
-            title="Detalle", icon="🔍", url_path="Detail"),
+            title="Detalle", url_path="Detail"),
 ]
 
 
 def _render_sidebar():
     """Render the branded sidebar content shown under the page navigation."""
     with st.sidebar:
-        st.markdown("## 🍽️ Restaurant Analyzer")
+        st.markdown("## Restaurant Analyzer")
         st.markdown("---")
 
         st.markdown("""
         <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; border: 1px solid #2D3748;">
-            <h4 style="margin: 0; color: #FF6B6B;">🏆 Grupo 5</h4>
+            <h4 style="margin: 0; color: #FF6B6B;">Grupo 5</h4>
             <p style="margin: 8px 0 0 0; color: #A0AEC0; font-size: 14px;">
                 Análisis de Reseñas de Restaurantes en Panamá
             </p>
@@ -120,7 +119,7 @@ def _render_sidebar():
         """, unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("### 📊 Data Info")
+        st.markdown("### Data Info")
 
         df = load_data()
         if df is not None:

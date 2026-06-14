@@ -13,7 +13,7 @@ def render(df: pd.DataFrame):
     """Render the Overview page with enhanced UI."""
 
     # KPI Row
-    st.markdown("### 📈 Key Metrics")
+    st.markdown("### Key Metrics")
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -45,13 +45,13 @@ def render(df: pd.DataFrame):
         rating_color = "#28a745" if avg_rating >= 4.5 else "#ffc107" if avg_rating >= 4 else "#dc3545"
         st.markdown(f"""
         <div style="background-color: #1E2530; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #2D3748;">
-            <h1 style="margin: 0; color: {rating_color}; font-size: 36px;">{avg_rating:.2f}⭐</h1>
+            <h1 style="margin: 0; color: {rating_color}; font-size: 36px;">{avg_rating:.2f}</h1>
             <p style="margin: 8px 0 0 0; color: #A0AEC0;">Average Rating</p>
         </div>
         """, unsafe_allow_html=True)
 
     with col4:
-        sentiment_label = "Positive 😊" if avg_sentiment > 0.1 else "Neutral 😐" if avg_sentiment > -0.1 else "Negative 😞"
+        sentiment_label = "Positive " if avg_sentiment > 0.1 else "Neutral " if avg_sentiment > -0.1 else "Negative "
         sentiment_color = "#28a745" if avg_sentiment > 0.1 else "#ffc107" if avg_sentiment > -0.1 else "#dc3545"
         st.markdown(f"""
         <div style="background-color: #1E2530; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #2D3748;">
@@ -63,7 +63,7 @@ def render(df: pd.DataFrame):
     st.markdown("---")
 
     # Charts Row 1
-    st.markdown("### 🏆 Top Restaurants & Rating Distribution")
+    st.markdown("### Top Restaurants & Rating Distribution")
 
     col1, col2 = st.columns([1, 1])
 
@@ -125,7 +125,7 @@ def render(df: pd.DataFrame):
     st.markdown("---")
 
     # Charts Row 2
-    st.markdown("### 📊 Category & Price Analysis")
+    st.markdown("### Category & Price Analysis")
 
     col1, col2 = st.columns(2)
 
@@ -180,7 +180,7 @@ def render(df: pd.DataFrame):
 
     # Sentiment Analysis Section
     if sentiment_cols:
-        st.markdown("### 😊 Sentiment Analysis by Aspect")
+        st.markdown("### Sentiment Analysis by Aspect")
 
         col1, col2 = st.columns(2)
 
@@ -241,7 +241,7 @@ def render(df: pd.DataFrame):
 
     # Filters section
     st.markdown("---")
-    st.markdown("### 🔍 Filters")
+    st.markdown("### Filters")
 
     col1, col2, col3 = st.columns(3)
 

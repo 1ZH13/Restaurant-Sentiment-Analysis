@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 def render(df: pd.DataFrame):
     """Render the Detail page with enhanced UI."""
 
-    st.markdown("### 🔍 Select a Restaurant")
+    st.markdown("### Select a Restaurant")
 
     # Restaurant selector
     restaurants = df.groupby(["restaurant_id", "restaurant_name"]).agg({
@@ -23,7 +23,7 @@ def render(df: pd.DataFrame):
     selected_restaurant_id = st.selectbox(
         "Choose a restaurant to explore:",
         options=restaurants["restaurant_id"].unique(),
-        format_func=lambda x: f"⭐ {restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}"
+        format_func=lambda x: f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}"
     )
 
     if not selected_restaurant_id:
@@ -49,9 +49,9 @@ def render(df: pd.DataFrame):
 
         st.markdown(f"""
         <div style="display: flex; align-items: center; gap: 16px;">
-            <h2 style="margin: 0; color: #FAFAFA;">📍 {rest_name}</h2>
+            <h2 style="margin: 0; color: #FAFAFA;">{rest_name}</h2>
             <div style="background-color: {rating_color}33; padding: 8px 16px; border-radius: 20px; border: 2px solid {rating_color};">
-                <span style="color: {rating_color}; font-size: 20px; font-weight: bold;">⭐ {avg_rating:.1f}</span>
+                <span style="color: {rating_color}; font-size: 20px; font-weight: bold;">{avg_rating:.1f}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -59,11 +59,11 @@ def render(df: pd.DataFrame):
         # Info badges
         info_items = []
         if "category" in rest_df.columns:
-            info_items.append(f"🍽️ {rest_info['category']}")
+            info_items.append(f"{rest_info['category']}")
         if "price_range" in rest_df.columns:
-            info_items.append(f"💰 {rest_info['price_range']}")
+            info_items.append(f"{rest_info['price_range']}")
         if "location" in rest_df.columns:
-            info_items.append(f"📍 {rest_info['location']}")
+            info_items.append(f"{rest_info['location']}")
 
         if info_items:
             st.markdown(" ".join(info_items), unsafe_allow_html=True)
@@ -82,7 +82,7 @@ def render(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 📊 Rating Distribution")
+        st.markdown("#### Rating Distribution")
 
         fig = go.Figure()
 
@@ -105,7 +105,7 @@ def render(df: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("#### 😊 Aspect Sentiments")
+        st.markdown("#### Aspect Sentiments")
 
         aspects = ["comida", "servicio", "precio", "ambiente"]
         aspect_scores = {}
@@ -143,7 +143,7 @@ def render(df: pd.DataFrame):
 
     # Reviews section
     st.markdown("---")
-    st.markdown("### 💬 Customer Reviews")
+    st.markdown("### Customer Reviews")
 
     # Sentiment filter
     sentiment_filter = st.radio(
@@ -183,15 +183,15 @@ def render(df: pd.DataFrame):
         if "overall_sentiment_score" in review.index and pd.notna(review["overall_sentiment_score"]):
             score = review["overall_sentiment_score"]
             if score > 0.1:
-                sentiment = "😊 Positive"
+                sentiment = "Positive"
                 sentiment_color = "#28a745"
                 sentiment_bg = "rgba(40, 167, 69, 0.1)"
             elif score < -0.1:
-                sentiment = "😞 Negative"
+                sentiment = "Negative"
                 sentiment_color = "#dc3545"
                 sentiment_bg = "rgba(220, 53, 69, 0.1)"
             else:
-                sentiment = "😐 Neutral"
+                sentiment = "Neutral"
                 sentiment_color = "#ffc107"
                 sentiment_bg = "rgba(255, 193, 7, 0.1)"
 
@@ -202,8 +202,8 @@ def render(df: pd.DataFrame):
         <div style="background-color: {sentiment_bg}; padding: 16px; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid {sentiment_color};">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <span style="color: #FAFAFA; font-weight: bold;">👤 {reviewer}</span>
-                    {"<span style='color: #A0AEC0; margin-left: 12px;'>📅 " + str(review_date) + "</span>" if pd.notna(review_date) and review_date else ""}
+                    <span style="color: #FAFAFA; font-weight: bold;">{reviewer}</span>
+                    {"<span style='color: #A0AEC0; margin-left: 12px;'>" + str(review_date) + "</span>" if pd.notna(review_date) and review_date else ""}
                 </div>
                 <span style="color: {sentiment_color}; font-weight: bold;">{sentiment}</span>
             </div>
