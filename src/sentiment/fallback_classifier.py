@@ -3,6 +3,7 @@ Fallback sentiment classifiers using VADER and TextBlob.
 These are used when LLM is not available or as a comparison baseline.
 """
 
+import re
 import pandas as pd
 from typing import Dict, List, Optional, Tuple
 
@@ -141,6 +142,108 @@ class TextBlobAnalyzer:
     def analyze_batch(self, texts: List[str]) -> List[Dict[str, str]]:
         """Analyze multiple texts."""
         return [self.get_aspect_sentiment(text) for text in texts]
+
+
+POSITIVE_LEXICON = {
+    # Spanish
+    "excelente", "excelentes", "delicioso", "deliciosa", "deliciosos", "deliciosas",
+    "rico", "rica", "ricos", "ricas", "riquisimo", "riquísimo", "buenisimo", "buenísimo",
+    "bueno", "buena", "buenos", "buenas", "increible", "increíble", "espectacular",
+    "espectaculares", "recomendado", "recomendada", "recomiendo", "recomendable",
+    "amable", "amables", "atento", "atenta", "atentos", "atentas", "perfecto", "perfecta",
+    "encanto", "encantó", "encanta", "maravilloso", "maravillosa", "fresco", "fresca",
+    "sabroso", "sabrosa", "agradable", "rapido", "rápido", "rapida", "rápida", "generoso",
+    "generosa", "bonito", "bonita", "lindo", "linda", "divino", "divina", "super", "súper",
+    "genial", "fabuloso", "exquisito", "exquisita", "mejor", "mejores", "favorito",
+    "favorita", "calidad", "gusto", "gusto", "gusta", "gustó", "encantador", "rica",
+    "wow", "top", "spicy", "supero", "superó",
+    # English
+    "excellent", "delicious", "great", "amazing", "good", "best", "friendly", "wonderful",
+    "perfect", "awesome", "tasty", "nice", "fantastic", "love", "loved", "recommend",
+    "recommended", "fresh", "gorgeous", "polite", "balanced",
+}
+
+NEGATIVE_LEXICON = {
+    # Spanish
+    "malo", "mala", "malos", "malas", "pesimo", "pésimo", "malisimo", "malísimo", "terrible",
+    "feo", "fea", "lento", "lenta", "lentos", "frio", "frío", "fria", "fría", "caro", "cara",
+    "caros", "caras", "demora", "demoro", "demoró", "tardo", "tardó", "sucio", "sucia",
+    "grosero", "grosera", "descortes", "descortés", "decepcion", "decepción", "decepcionado",
+    "decepcionada", "decepcionante", "horrible", "mediocre", "desabrido", "salado", "quemado",
+    "incomodo", "incómodo", "ruidoso", "falta", "faltan", "falto", "faltó", "peor", "peores",
+    "regular", "asco", "defraudo", "defraudó", "defrauda", "fome", "aceptable",
+    # English
+    "bad", "terrible", "awful", "slow", "cold", "expensive", "overpriced", "disappointing",
+    "disappointed", "worst", "rude", "dirty", "bland", "horrible", "mediocre",
+}
+
+NEGATORS = {"no", "nunca", "sin", "tampoco", "ni", "jamas", "jamás", "nada"}
+
+_TOKEN_RE = re.compile(r"[a-záéíóúñü]+", re.IGNORECASE)
+
+
+class SpanishLexiconAnalyzer:
+    """Aspect sentiment via a Spanish/English lexicon with negation handling.
+
+    Designed for Spanish reviews (where English-only tools like VADER score most
+    text as neutral). For each aspect it scores the sentences mentioning that
+    aspect; for ``comida`` it falls back to the whole review since food is the
+    central topic of a restaurant review. VADER is mixed in for English text.
+    """
+
+    def __init__(self):
+        self.vader = VADERSentimentAnalyzer() if VADER_AVAILABLE else None
+
+    def _lexicon_score(self, text: str) -> int:
+        tokens = _TOKEN_RE.findall(text.lower())
+        score = 0
+        for i, tok in enumerate(tokens):
+            polarity = 1 if tok in POSITIVE_LEXICON else (-1 if tok in NEGATIVE_LEXICON else 0)
+            if polarity == 0:
+                continue
+            window = tokens[max(0, i - 3):i]
+            if any(n in window for n in NEGATORS):
+                polarity = -polarity
+            score += polarity
+        return score
+
+    def _classify_text(self, text: str) -> str:
+        score = self._lexicon_score(text)
+        if self.vader is not None:
+            compound = self.vader.get_compound_score(text)
+            if compound >= 0.4:
+                score += 1
+            elif compound <= -0.4:
+                score -= 1
+        if score > 0:
+            return "positive"
+        if score < 0:
+            return "negative"
+        return "neutral"
+
+    def get_aspect_sentiment(self, text: str) -> Dict[str, str]:
+        result = {"comida": "neutral", "servicio": "neutral", "precio": "neutral", "ambiente": "neutral"}
+        if not text or pd.isna(text):
+            return result
+
+        text = str(text)
+        sentences = re.split(r"[.!?\n]", text)
+
+        for aspect, keywords in ASPECT_KEYWORDS.items():
+            matched = [s for s in sentences if any(k in s.lower() for k in keywords)]
+            if matched:
+                result[aspect] = self._classify_text(" ".join(matched))
+            elif aspect == "comida":
+                # Food is the central topic: use the whole review if not named.
+                result[aspect] = self._classify_text(text)
+
+        return result
+
+    def analyze_review(self, text: str) -> Dict[str, str]:
+        return self.get_aspect_sentiment(text)
+
+    def analyze_batch(self, texts: List[str]) -> List[Dict[str, str]]:
+        return [self.get_aspect_sentiment(t) for t in texts]
 
 
 class HybridSentimentAnalyzer:

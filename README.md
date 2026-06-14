@@ -40,33 +40,67 @@ cp .env.example .env
 
 ## Data Sources
 
-- **Degusta Panamá** - https://www.degustapanama.com/
-- **Tripadvisor Panama** - https://www.tripadvisor.com/
+Two **real**, independent sources of Panama City restaurant reviews:
+
+- **Degusta Panamá** — https://www.degustapanama.com/
+  Reviews are embedded as schema.org microdata and scraped with
+  `requests` + `BeautifulSoup` (`src/ingestion/degusta_scraper.py`).
+- **RestaurantGuru** — https://restaurantguru.com/Panama-City
+  Aggregates real customer reviews (mostly from Google), scraped with
+  `src/ingestion/restaurantguru_scraper.py`.
+
+> **Note on Tripadvisor:** the originally planned second source
+> (https://www.tripadvisor.com/Restaurants-g294480-Panama_City_Panama_Province.html)
+> returns **HTTP 403 + captcha** to scrapers, so RestaurantGuru is used instead.
+> The Tripadvisor scraper is kept in `src/ingestion/tripadvisor_scraper.py` for reference.
 
 ## Usage
 
-### 1. Scrape Data
-```bash
-python -m src.ingestion.degusta_scraper
-python -m src.ingestion.tripadvisor_scraper
-```
+The processed dataset is committed under `data/`, so you can launch the dashboard
+right away:
 
-### 2. Process Data
-```bash
-python -m src.preprocessing.cleaner
-python -m src.preprocessing.normalizer
-```
-
-### 3. Run Analysis
-```bash
-python -m src.sentiment.llm_classifier
-python -m src.clustering.restaurant_clusterer
-```
-
-### 4. Start Dashboard
 ```bash
 streamlit run dashboard/app.py
 ```
+
+### Regenerating the data (full pipeline)
+
+**Option A — one command** (runs the whole ETL + ML from the scraped source files):
+
+```bash
+python run_pipeline.py
+```
+
+**Option B — step by step:**
+
+```bash
+# 1. Ingest the two real sources (live scraping, rate-limited)
+python -m src.ingestion.degusta_scraper           # -> data/raw/degusta_reviews.csv
+python -m src.ingestion.restaurantguru_scraper    # -> data/raw/restaurantguru_reviews.csv
+
+# 2. Combine sources + tag aspect sentiment
+python -m src.ingestion.build_dataset             # -> data/raw/raw_reviews.csv
+
+# 3. ETL: clean -> normalize -> features
+python -m src.preprocessing.cleaner
+python -m src.preprocessing.normalizer
+python -m src.preprocessing.feature_engineering
+
+# 4. ML: clustering (writes the dashboard's canonical file)
+python -m src.clustering.restaurant_clusterer     # -> data/processed/restaurants_clustered.csv
+
+# 5. Dashboard
+streamlit run dashboard/app.py
+```
+
+## Sentiment Analysis
+
+Aspect-based sentiment (comida / servicio / precio / ambiente) is computed per
+review. The default classifier is a **Spanish/English lexicon analyzer** with
+negation handling (`src/sentiment/fallback_classifier.py`) — it needs **no API
+key** and works well on Spanish reviews. An LLM classifier (Google Gemini,
+`src/sentiment/gemini_classifier.py`) can be plugged in by setting `GOOGLE_API_KEY`
+in `.env`.
 
 ## Team
 

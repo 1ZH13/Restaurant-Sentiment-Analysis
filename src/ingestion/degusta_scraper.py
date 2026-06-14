@@ -221,7 +221,106 @@ def save_to_csv(df: pd.DataFrame, path: str = "data/raw/degusta_restaurants.csv"
     print(f"\nSaved {len(df)} restaurants to {path}")
 
 
-def main():
+def get_reviews_from_page(soup: BeautifulSoup) -> List[Dict]:
+    """Extract individual reviews embedded in a restaurant page as schema.org
+    microdata (itemprop="review"). Degusta renders the most recent reviews
+    server-side, so these are real reviews retrievable without JavaScript.
+    """
+    reviews = []
+    for rev in soup.select('[itemprop="review"], .review'):
+        body = rev.select_one('[itemprop="reviewBody"]')
+        if not body:
+            continue
+        text = body.get_text(" ", strip=True)
+        if len(text) < 10:
+            continue
+
+        author = rev.select_one('[itemprop="author"]')
+        rating = rev.select_one('[itemprop="ratingValue"]')
+        date = rev.select_one('[itemprop="datePublished"]')
+
+        rating_val = None
+        if rating is not None:
+            raw = rating.get("content") or rating.get_text(strip=True)
+            try:
+                rating_val = float(raw)
+            except (TypeError, ValueError):
+                rating_val = None
+
+        reviews.append({
+            "review_text": text,
+            "reviewer_name": author.get_text(" ", strip=True) if author else None,
+            "review_rating": rating_val,
+            "review_date": (date.get("content") or date.get_text(strip=True)) if date else None,
+        })
+    return reviews
+
+
+def scrape_reviews_all(session, max_restaurants: int = 50, delay: float = 2.0) -> pd.DataFrame:
+    """Scrape restaurant pages and return a flat DataFrame of individual reviews.
+
+    Each row carries the review text plus restaurant-level metadata so it can be
+    merged with other sources into data/raw/raw_reviews.csv.
+    """
+    print("Fetching restaurant list...")
+    soup = get_page(session, SEARCH_URL, delay)
+    if not soup:
+        print("Failed to fetch search page")
+        return pd.DataFrame()
+
+    restaurant_links = get_restaurant_links_from_search(soup)
+    print(f"Found {len(restaurant_links)} restaurant URLs")
+
+    rows = []
+    for i, rest in enumerate(restaurant_links[:max_restaurants]):
+        print(f"[{i+1}/{min(len(restaurant_links), max_restaurants)}] {rest['restaurant_id']}... ",
+              end="", flush=True)
+
+        page = get_page(session, rest["url"], delay)
+        if not page:
+            print("FAILED")
+            continue
+
+        details = get_restaurant_details(page, rest["url"], rest["restaurant_id"])
+        reviews = get_reviews_from_page(page)
+        print(f"{details.get('restaurant_name', 'N/A')[:28]} -> {len(reviews)} reviews")
+
+        for r in reviews:
+            rows.append({
+                "restaurant_id": rest["restaurant_id"],
+                "restaurant_name": details.get("restaurant_name"),
+                "category": details.get("category", "General"),
+                "location": details.get("location", "Panamá"),
+                "price_range": details.get("price_range"),
+                "overall_rating": details.get("overall_rating"),
+                "food_rating": details.get("food_rating"),
+                "service_rating": details.get("service_rating"),
+                "ambiance_rating": details.get("ambiance_rating"),
+                "review_text": r["review_text"],
+                "review_date": r["review_date"],
+                "reviewer_name": r["reviewer_name"],
+                "source": "degusta",
+            })
+
+    return pd.DataFrame(rows)
+
+
+def scrape_reviews_main():
+    """Scrape real Degusta reviews and save them to data/raw/degusta_reviews.csv."""
+    session = get_session()
+    df = scrape_reviews_all(session, max_restaurants=50, delay=2.0)
+    if df.empty:
+        print("No reviews scraped")
+        return df
+    Path("data/raw").mkdir(parents=True, exist_ok=True)
+    df.to_csv("data/raw/degusta_reviews.csv", index=False)
+    print(f"\nSaved {len(df)} reviews from {df['restaurant_id'].nunique()} restaurants "
+          f"to data/raw/degusta_reviews.csv")
+    return df
+
+
+def scrape_restaurants_main():
+    """Scrape restaurant metadata only -> data/raw/degusta_restaurants.csv."""
     session = get_session()
     df = scrape_all(session, max_restaurants=50, delay=2.0)
     save_to_csv(df)
@@ -232,4 +331,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Reviews are the pipeline deliverable; scrape them by default.
+    scrape_reviews_main()

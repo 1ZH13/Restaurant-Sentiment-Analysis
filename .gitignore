@@ -1,10 +1,19 @@
-# Data (keep raw/, processed/ structure but ignore large files)
+# Data: ignore everything by default, but commit the real dataset so the
+# dashboard works on clone and the pipeline is reproducible.
 data/raw/*.csv
 data/processed/*.csv
 data/cache/*.json
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/cache/.gitkeep
+# Real source files + pipeline outputs (tracked)
+!data/raw/degusta_reviews.csv
+!data/raw/restaurantguru_reviews.csv
+!data/raw/raw_reviews.csv
+!data/processed/cleaned_reviews.csv
+!data/processed/normalized_reviews.csv
+!data/processed/restaurant_features.csv
+!data/processed/restaurants_clustered.csv
 
 # Environment
 .env
