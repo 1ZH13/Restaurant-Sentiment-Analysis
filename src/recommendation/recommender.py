@@ -182,7 +182,7 @@ class RestaurantRecommender:
                     parts.append(f"Muy buenas reseñas sobre {aspect_names.get(aspect, aspect)}")
 
         if not parts:
-            parts.append("Coimbra bien con tus preferencias")
+            parts.append("Combina bien con tus preferencias")
 
         return ". ".join(parts) + "."
 

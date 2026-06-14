@@ -190,7 +190,11 @@ def main():
     from dotenv import load_dotenv
     load_dotenv()
 
-    api_key = os.getenv("GOOGLE_API_KEY") or "AIzaSyBAJcqGrJ3AqRi3NUcNQaIWopt_4kFnhIM"
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GOOGLE_API_KEY is not set. Copy .env.example to .env and add your key."
+        )
 
     classifier = AspectSentimentClassifier(
         model_name="gemini-2.5-flash",

@@ -10,15 +10,6 @@ THEME = {
     "font": "sans-serif"
 }
 
-PAGES = {
-    "Overview": "1_Overview.py",
-    "Comparar": "2_Comparar.py",
-    "Sentimiento": "3_Sentimiento.py",
-    "Clustering": "4_Clustering.py",
-    "Recomendaciones": "5_Recomendaciones.py",
-    "Detalle": "6_Detalle.py"
-}
-
 SENTIMENT_COLORS = {
     "positive": "#28a745",
     "neutral": "#ffc107",

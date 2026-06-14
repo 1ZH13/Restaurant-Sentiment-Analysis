@@ -9,6 +9,13 @@ import plotly.graph_objects as go
 import numpy as np
 
 
+def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
+    """Convert a #RRGGBB hex string to an rgba() string with the given alpha."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = (int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r}, {g}, {b}, {alpha})"
+
+
 def render(df: pd.DataFrame):
     """Render the Comparison page with enhanced UI."""
 
@@ -40,13 +47,14 @@ def render(df: pd.DataFrame):
     st.markdown("#### 📋 Restaurant Information")
 
     info_cols = ["restaurant_name", "category", "price_range", "overall_rating"]
-    info_df = compare_df.groupby("restaurant_id")[info_cols].first().reset_index()
+    info_df = compare_df.groupby("restaurant_id")[info_cols].first().reset_index()[info_cols]
     info_df.columns = ["Name", "Category", "Price Range", "Rating"]
 
     st.dataframe(
-        info_df.style.background_gradient(subset=["Rating"], cmap="RdYlGn", vmin=3.5, vmax=5.0),
+        info_df,
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={"Rating": st.column_config.NumberColumn(format="%.2f ⭐")}
     )
 
     # Charts
@@ -116,7 +124,7 @@ def render(df: pd.DataFrame):
                     theta=labels + [labels[0]],
                     name=row["restaurant_name"][:20],
                     fill="toself",
-                    fillcolor=f"{colors[i % len(colors)]}33",
+                    fillcolor=_hex_to_rgba(colors[i % len(colors)], 0.2),
                     line=dict(color=colors[i % len(colors)], width=2)
                 ))
 

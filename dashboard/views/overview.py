@@ -105,7 +105,7 @@ def render(df: pd.DataFrame):
 
         fig.add_trace(go.Histogram(
             x=df["overall_rating"].dropna(),
-            nbins=20,
+            nbinsx=20,
             marker_color='#FF6B6B',
             opacity=0.8,
             hovertemplate='Rating: %{x:.1f}<br>Count: %{y}<extra></extra>'

@@ -202,6 +202,11 @@ def main():
     # Load processed data
     df = pd.read_csv("data/processed/normalized_reviews.csv")
 
+    # Derive numeric aspect-sentiment columns so clustering can use them and the
+    # dashboard's canonical file (restaurants_clustered.csv) ships with them.
+    from src.sentiment.aspect_scores import derive_aspect_sentiment_scores
+    df = derive_aspect_sentiment_scores(df)
+
     # Initialize clusterer
     clusterer = RestaurantClusterer(n_clusters=5)
 

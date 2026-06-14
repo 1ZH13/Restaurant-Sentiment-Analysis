@@ -142,15 +142,16 @@ def render(df: pd.DataFrame):
             heatmap_data.append(row)
 
         heatmap_df = pd.DataFrame(heatmap_data)
+        aspect_cols = [a.capitalize() for a in aspects]
 
         fig = px.imshow(
-            heatmap_df[aspects].values,
-            x=[a.capitalize() for a in aspects],
+            heatmap_df[aspect_cols].values,
+            x=aspect_cols,
             y=heatmap_df["Category"].values,
             color_continuous_scale="RdYlGn",
             range_color=[-1, 1],
             labels=dict(x="Aspect", y="Category", color="Sentiment"),
-            text=heatmap_df[aspects].values
+            text_auto=".2f"
         )
 
         fig.update_layout(

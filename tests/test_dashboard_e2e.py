@@ -4,6 +4,7 @@ End-to-end tests for the Streamlit dashboard using Playwright.
 
 import pytest
 import subprocess
+import sys
 import time
 import signal
 import os
@@ -21,7 +22,7 @@ def streamlit_server():
     env["PYTHONPATH"] = str(project_root)
 
     process = subprocess.Popen(
-        ["python", "-m", "streamlit", "run", "dashboard/app.py",
+        [sys.executable, "-m", "streamlit", "run", "dashboard/app.py",
          "--server.port", "8505",
          "--server.headless", "true",
          "--browser.gatherUsageStats", "false"],

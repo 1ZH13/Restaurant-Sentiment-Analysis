@@ -118,7 +118,7 @@ def render(df: pd.DataFrame):
     profiles_df = pd.DataFrame(cluster_profiles)
 
     st.dataframe(
-        profiles_df.style.background_gradient(subset=["Avg Rating"], cmap="RdYlGn", vmin=3.5, vmax=5.0),
+        profiles_df,
         use_container_width=True,
         hide_index=True
     )
@@ -143,9 +143,10 @@ def render(df: pd.DataFrame):
         top_restaurants.columns = ["ID", "Restaurant", "Rating"]
 
         st.dataframe(
-            top_restaurants.style.background_gradient(subset=["Rating"], cmap="RdYlGn", vmin=3.5, vmax=5.0),
+            top_restaurants,
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
+            column_config={"Rating": st.column_config.NumberColumn(format="%.2f ⭐")}
         )
 
     # Scatter plot
