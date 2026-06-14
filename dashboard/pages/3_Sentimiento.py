@@ -145,7 +145,7 @@ def render(df: pd.DataFrame):
 
         fig = px.imshow(
             heatmap_df[aspects].values,
-            x=[a.capitalize() for a in aspectos := aspects],
+            x=[a.capitalize() for a in aspects],
             y=heatmap_df["Category"].values,
             color_continuous_scale="RdYlGn",
             range_color=[-1, 1],
