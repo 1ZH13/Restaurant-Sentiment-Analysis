@@ -225,7 +225,7 @@ def add_sentiment_columns(df: pd.DataFrame, sentiment_column: str = "sentiment")
             df[f"{col_name}_score"] = df[col_name].apply(sentiment_to_numeric)
 
     # Overall sentiment score
-    score_cols = [f"{aspect}_score" for aspect in aspects]
+    score_cols = [f"sentiment_{aspect}_score" for aspect in aspects]
     existing_score_cols = [col for col in score_cols if col in df.columns]
 
     if existing_score_cols:
