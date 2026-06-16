@@ -162,9 +162,9 @@ class RestaurantRecommender:
         if pd.notna(restaurant.get("overall_rating")):
             rating = float(restaurant.get("overall_rating"))
             if rating >= 4.5:
-                parts.append(f"Excelente rating de {rating:.1f}/5.0")
+                parts.append(f"Excelente calificación de {rating:.1f}/5.0")
             elif rating >= 4.0:
-                parts.append(f"Buen rating de {rating:.1f}/5.0")
+                parts.append(f"Buena calificación de {rating:.1f}/5.0")
 
         # Category
         if preferences.get("category") and restaurant.get("category"):
@@ -199,7 +199,7 @@ El usuario busca: {preferences}
 Recomendación:
 - Restaurante: {restaurant.restaurant_name}
 - Categoría: {restaurant.category}
-- Rating: {restaurant.overall_rating}/5.0
+- Calificación: {restaurant.overall_rating}/5.0
 - Precio: {restaurant.price_range}
 - Puntuación de coincidencia: {restaurant.match_score:.2f}
 
@@ -216,7 +216,7 @@ Usa español y sé conciso.
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"LLM explanation failed: {e}")
+            print(f"Falló la explicación con LLM: {e}")
             return restaurant.explanation
 
 
@@ -226,7 +226,7 @@ def main():
     try:
         df = pd.read_csv("data/processed/restaurants_clustered.csv")
     except FileNotFoundError:
-        print("Please run the clustering module first to generate the required data.")
+        print("Ejecuta primero el módulo de agrupamiento para generar los datos requeridos.")
         return
 
     # Initialize recommender
@@ -243,14 +243,14 @@ def main():
     # Get recommendations
     recommendations = recommender.recommend(preferences, top_n=5)
 
-    print("Recommendations for Italian food, medium price range, prioritizing food and service:")
+    print("Recomendaciones para comida italiana, rango de precio medio, priorizando comida y servicio:")
     for i, rec in enumerate(recommendations, 1):
         print(f"\n{i}. {rec.restaurant_name}")
-        print(f"   Category: {rec.category}")
-        print(f"   Rating: {rec.overall_rating:.1f}/5.0")
-        print(f"   Price: {rec.price_range}")
-        print(f"   Match Score: {rec.match_score:.2f}")
-        print(f"   Explanation: {rec.explanation}")
+        print(f"   Categoría: {rec.category}")
+        print(f"   Calificación: {rec.overall_rating:.1f}/5.0")
+        print(f"   Precio: {rec.price_range}")
+        print(f"   Puntaje de coincidencia: {rec.match_score:.2f}")
+        print(f"   Explicación: {rec.explanation}")
 
 
 if __name__ == "__main__":

@@ -88,6 +88,6 @@ def get_data_summary() -> dict:
 
 if __name__ == "__main__":
     summary = get_data_summary()
-    print("Data Summary:")
+    print("Resumen de datos:")
     for key, value in summary.items():
         print(f"  {key}: {value}")

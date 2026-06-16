@@ -8,10 +8,17 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 
+def _clean_display(value):
+    """Return a readable display value, skipping missing values."""
+    if pd.isna(value) or str(value).lower() == "nan":
+        return None
+    return str(value)
+
+
 def render(df: pd.DataFrame):
     """Render the Detail page with enhanced UI."""
 
-    st.markdown("### Select a Restaurant")
+    st.markdown("### Selecciona un restaurante")
 
     # Restaurant selector
     restaurants = df.groupby(["restaurant_id", "restaurant_name"]).agg({
@@ -21,9 +28,13 @@ def render(df: pd.DataFrame):
     }).reset_index()
 
     selected_restaurant_id = st.selectbox(
-        "Choose a restaurant to explore:",
+        "Elige un restaurante para explorar:",
         options=restaurants["restaurant_id"].unique(),
-        format_func=lambda x: f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}"
+        format_func=lambda x: (
+            f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f}"
+            if pd.notna(restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0])
+            else "Sin calificación"
+        ) + f" - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}"
     )
 
     if not selected_restaurant_id:
@@ -33,25 +44,27 @@ def render(df: pd.DataFrame):
     rest_df = df[df["restaurant_id"] == selected_restaurant_id]
 
     if len(rest_df) == 0:
-        st.warning("No data available for this restaurant.")
+        st.warning("No hay datos disponibles para este restaurante.")
         return
 
     # Restaurant info header
     rest_info = rest_df.iloc[0]
-    rest_name = rest_info.get("restaurant_name", "Unknown Restaurant")
+    rest_name = rest_info.get("restaurant_name", "Restaurante desconocido")
 
     col1, col2 = st.columns([3, 1])
 
     with col1:
         # Rating badge
         avg_rating = rest_df["overall_rating"].mean()
-        rating_color = "#28a745" if avg_rating >= 4.5 else "#ffc107" if avg_rating >= 4 else "#dc3545"
+        has_rating = pd.notna(avg_rating)
+        rating_color = "#28a745" if has_rating and avg_rating >= 4.5 else "#ffc107" if has_rating and avg_rating >= 4 else "#A0AEC0" if not has_rating else "#dc3545"
+        rating_label = f"{avg_rating:.1f}" if has_rating else "S/C"
 
         st.markdown(f"""
         <div style="display: flex; align-items: center; gap: 16px;">
             <h2 style="margin: 0; color: #FAFAFA;">{rest_name}</h2>
             <div style="background-color: {rating_color}33; padding: 8px 16px; border-radius: 20px; border: 2px solid {rating_color};">
-                <span style="color: {rating_color}; font-size: 20px; font-weight: bold;">{avg_rating:.1f}</span>
+                <span style="color: {rating_color}; font-size: 20px; font-weight: bold;">{rating_label}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -59,11 +72,17 @@ def render(df: pd.DataFrame):
         # Info badges
         info_items = []
         if "category" in rest_df.columns:
-            info_items.append(f"{rest_info['category']}")
+            category = _clean_display(rest_info["category"])
+            if category:
+                info_items.append(category)
         if "price_range" in rest_df.columns:
-            info_items.append(f"{rest_info['price_range']}")
+            price_range = _clean_display(rest_info["price_range"])
+            if price_range:
+                info_items.append(price_range)
         if "location" in rest_df.columns:
-            info_items.append(f"{rest_info['location']}")
+            location = _clean_display(rest_info["location"])
+            if location:
+                info_items.append(location)
 
         if info_items:
             st.markdown(" ".join(info_items), unsafe_allow_html=True)
@@ -72,7 +91,7 @@ def render(df: pd.DataFrame):
         st.markdown(f"""
         <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; text-align: center;">
             <h1 style="margin: 0; color: #4ECDC4; font-size: 48px;">{len(rest_df)}</h1>
-            <p style="margin: 4px 0 0 0; color: #A0AEC0;">reviews</p>
+            <p style="margin: 4px 0 0 0; color: #A0AEC0;">reseñas</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -82,7 +101,7 @@ def render(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### Rating Distribution")
+        st.markdown("#### Distribución de calificaciones")
 
         fig = go.Figure()
 
@@ -99,13 +118,13 @@ def render(df: pd.DataFrame):
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#FAFAFA'),
-            xaxis_title="Rating",
-            yaxis_title="Count"
+            xaxis_title="Calificación",
+            yaxis_title="Cantidad"
         )
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("#### Aspect Sentiments")
+        st.markdown("#### Sentimiento por aspecto")
 
         aspects = ["comida", "servicio", "precio", "ambiente"]
         aspect_scores = {}
@@ -135,20 +154,20 @@ def render(df: pd.DataFrame):
                 paper_bgcolor='rgba(0,0,0,0)',
                 font=dict(color='#FAFAFA'),
                 yaxis=dict(range=[-1, 1]),
-                yaxis_title="Sentiment Score"
+                yaxis_title="Puntaje de sentimiento"
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("Sentiment data not available.")
+            st.info("No hay datos de sentimiento disponibles.")
 
     # Reviews section
     st.markdown("---")
-    st.markdown("### Customer Reviews")
+    st.markdown("### Reseñas de clientes")
 
     # Sentiment filter
     sentiment_filter = st.radio(
-        "Filter by sentiment:",
-        options=["All", "Positive", "Neutral", "Negative"],
+        "Filtrar por sentimiento:",
+        options=["Todos", "Positivo", "Neutral", "Negativo"],
         horizontal=True
     )
 
@@ -163,17 +182,17 @@ def render(df: pd.DataFrame):
     reviews_df = rest_df[["review_text", "review_date", "reviewer_name"] +
                         [col for col in rest_df.columns if col.startswith("sentiment_")]].dropna(subset=["review_text"])
 
-    if sentiment_filter != "All":
+    if sentiment_filter != "Todos":
         sentiment_col = "overall_sentiment_score"
         if sentiment_col in reviews_df.columns:
-            if sentiment_filter == "Positive":
+            if sentiment_filter == "Positivo":
                 reviews_df = reviews_df[reviews_df[sentiment_col] > 0.1]
-            elif sentiment_filter == "Negative":
+            elif sentiment_filter == "Negativo":
                 reviews_df = reviews_df[reviews_df[sentiment_col] < -0.1]
             else:
                 reviews_df = reviews_df[(reviews_df[sentiment_col] >= -0.1) & (reviews_df[sentiment_col] <= 0.1)]
 
-    st.markdown(f"**Showing {len(reviews_df)} review(s)**")
+    st.markdown(f"**Mostrando {len(reviews_df)} reseña(s)**")
 
     for _, review in reviews_df.iterrows():
         sentiment = ""
@@ -183,11 +202,11 @@ def render(df: pd.DataFrame):
         if "overall_sentiment_score" in review.index and pd.notna(review["overall_sentiment_score"]):
             score = review["overall_sentiment_score"]
             if score > 0.1:
-                sentiment = "Positive"
+                sentiment = "Positivo"
                 sentiment_color = "#28a745"
                 sentiment_bg = "rgba(40, 167, 69, 0.1)"
             elif score < -0.1:
-                sentiment = "Negative"
+                sentiment = "Negativo"
                 sentiment_color = "#dc3545"
                 sentiment_bg = "rgba(220, 53, 69, 0.1)"
             else:
@@ -195,7 +214,7 @@ def render(df: pd.DataFrame):
                 sentiment_color = "#ffc107"
                 sentiment_bg = "rgba(255, 193, 7, 0.1)"
 
-        reviewer = review.get('reviewer_name', 'Anonymous')
+        reviewer = review.get('reviewer_name', 'Anónimo')
         review_date = review.get('review_date', '')
 
         st.markdown(f"""

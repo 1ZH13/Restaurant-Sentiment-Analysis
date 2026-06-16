@@ -19,7 +19,7 @@ def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
 def render(df: pd.DataFrame):
     """Render the Comparison page with enhanced UI."""
 
-    st.markdown("### Select Restaurants to Compare")
+    st.markdown("### Selecciona restaurantes para comparar")
 
     # Get unique restaurants
     restaurants = df.groupby(["restaurant_id", "restaurant_name"]).agg({
@@ -30,41 +30,42 @@ def render(df: pd.DataFrame):
 
     # Restaurant selector with better UI
     selected_restaurants = st.multiselect(
-        "Choose restaurants to compare (2-5):",
+        "Elige restaurantes para comparar (2-5):",
         options=restaurants["restaurant_id"].unique(),
         format_func=lambda x: f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}",
-        max_selections=5
+        max_selections=5,
+        placeholder="Selecciona restaurantes"
     )
 
     if len(selected_restaurants) < 2:
-        st.info("Please select at least 2 restaurants to compare.")
+        st.info("Selecciona al menos 2 restaurantes para comparar.")
         return
 
     # Filter data for selected restaurants
     compare_df = df[df["restaurant_id"].isin(selected_restaurants)]
 
     # Restaurant info cards
-    st.markdown("#### Restaurant Information")
+    st.markdown("#### Información de restaurantes")
 
     info_cols = ["restaurant_name", "category", "price_range", "overall_rating"]
     info_df = compare_df.groupby("restaurant_id")[info_cols].first().reset_index()[info_cols]
-    info_df.columns = ["Name", "Category", "Price Range", "Rating"]
+    info_df.columns = ["Nombre", "Categoría", "Rango de precio", "Calificación"]
 
     st.dataframe(
         info_df,
         use_container_width=True,
         hide_index=True,
-        column_config={"Rating": st.column_config.NumberColumn(format="%.2f ")}
+        column_config={"Calificación": st.column_config.NumberColumn(format="%.2f ")}
     )
 
     # Charts
     st.markdown("---")
-    st.markdown("#### Rating Comparison")
+    st.markdown("#### Comparación de calificaciones")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("##### Overall Rating")
+        st.markdown("##### Calificación general")
 
         ratings = compare_df.groupby("restaurant_id")["overall_rating"].mean().reset_index()
         ratings = ratings.merge(
@@ -93,12 +94,12 @@ def render(df: pd.DataFrame):
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#FAFAFA'),
             yaxis=dict(range=[0, 5.5]),
-            yaxis_title="Rating"
+            yaxis_title="Calificación"
         )
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("##### Aspect Ratings (Radar)")
+        st.markdown("##### Calificación por aspecto (radar)")
 
         aspects = ["comida", "servicio", "precio", "ambiente"]
         sentiment_cols = [f"sentiment_{a}_score" for a in aspects]
@@ -145,11 +146,11 @@ def render(df: pd.DataFrame):
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("Sentiment data not available for radar chart.")
+            st.info("No hay datos de sentimiento disponibles para el gráfico de radar.")
 
     # Review count
     st.markdown("---")
-    st.markdown("#### Review Count")
+    st.markdown("#### Cantidad de reseñas")
 
     review_counts = compare_df.groupby("restaurant_id").size().reset_index(name="review_count")
     review_counts = review_counts.merge(
@@ -174,13 +175,13 @@ def render(df: pd.DataFrame):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font=dict(color='#FAFAFA'),
-        yaxis_title="Number of Reviews"
+        yaxis_title="Número de reseñas"
     )
     st.plotly_chart(fig, use_container_width=True)
 
     # Sample reviews
     st.markdown("---")
-    st.markdown("#### Sample Reviews")
+    st.markdown("#### Reseñas de muestra")
 
     cols = st.columns(3)
 
@@ -191,5 +192,5 @@ def render(df: pd.DataFrame):
         with cols[i]:
             st.markdown(f"**{rest_name}**")
             for review in rest_reviews:
-                with st.expander("View review"):
+                with st.expander("Ver reseña"):
                     st.write(review[:200] + "..." if len(str(review)) > 200 else review)

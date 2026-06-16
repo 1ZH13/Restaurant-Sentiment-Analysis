@@ -161,5 +161,6 @@ CUSTOM_CSS = """
     footer {
         visibility: hidden;
     }
+
 </style>
 """

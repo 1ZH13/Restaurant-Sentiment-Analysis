@@ -22,10 +22,11 @@ from dashboard.views import (
     recomendaciones,
     detalle,
 )
+from dashboard.utils.i18n import translate_dashboard_dataframe
 from src.sentiment.aspect_scores import derive_aspect_sentiment_scores
 
 st.set_page_config(
-    page_title="Restaurant Analyzer - Panama",
+    page_title="Analizador de Restaurantes - Panamá",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -33,14 +34,18 @@ st.set_page_config(
 # Apply dark theme CSS
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
+I18N_VERSION = "es-dashboard-content-v3"
+
 
 @st.cache_data
 def load_data():
     """Load processed data with caching."""
+    _ = I18N_VERSION
     try:
         df = pd.read_csv("data/processed/restaurants_clustered.csv")
     except FileNotFoundError:
         return None
+    df = translate_dashboard_dataframe(df)
     # Ensure sentiment score columns exist even if the CSV predates the
     # sentiment-aware pipeline, so all pages render sentiment correctly.
     return derive_aspect_sentiment_scores(df)
@@ -50,9 +55,9 @@ def _render_no_data():
     """Show the onboarding message when no processed data is available."""
     st.markdown("""
     <div style="background-color: #1E2530; padding: 40px; border-radius: 12px; text-align: center;">
-        <h2 style="color: #FF6B6B;">No Data Found</h2>
+        <h2 style="color: #FF6B6B;">No se encontraron datos</h2>
         <p style="color: #A0AEC0; margin-top: 16px;">
-            Please run the pipeline first to generate data.
+            Ejecuta primero el pipeline para generar los datos.
         </p>
         <code style="display: block; margin-top: 20px; padding: 16px; background-color: #0E1117; border-radius: 8px;">
             python -m src.preprocessing.cleaner<br>
@@ -88,14 +93,14 @@ SUBTITLE = "Análisis de sentimiento de restaurantes en Ciudad de Panamá"
 
 # Native multipage navigation. url_path values match tests/test_dashboard_e2e.py.
 PAGES = [
-    st.Page(_page(overview.render, "Overview", SUBTITLE),
-            title="Overview", url_path="Overview", default=True),
+    st.Page(_page(overview.render, "Resumen", SUBTITLE),
+            title="Resumen", url_path="Overview", default=True),
     st.Page(_page(comparar.render, "Comparar", SUBTITLE),
             title="Comparar", url_path="Comparison"),
     st.Page(_page(sentimiento.render, "Sentimiento", SUBTITLE),
             title="Sentimiento", url_path="Sentiment"),
-    st.Page(_page(clustering.render, "Clustering", SUBTITLE),
-            title="Clustering", url_path="Clustering"),
+    st.Page(_page(clustering.render, "Agrupamiento", SUBTITLE),
+            title="Agrupamiento", url_path="Clustering"),
     st.Page(_page(recomendaciones.render, "Recomendaciones", SUBTITLE),
             title="Recomendaciones", url_path="Recommendations"),
     st.Page(_page(detalle.render, "Detalle", SUBTITLE),
@@ -106,7 +111,7 @@ PAGES = [
 def _render_sidebar():
     """Render the branded sidebar content shown under the page navigation."""
     with st.sidebar:
-        st.markdown("## Restaurant Analyzer")
+        st.markdown("## Analizador de Restaurantes")
         st.markdown("---")
 
         st.markdown("""
@@ -119,17 +124,17 @@ def _render_sidebar():
         """, unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("### Data Info")
+        st.markdown("### Información de datos")
 
         df = load_data()
         if df is not None:
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("Restaurants", df["restaurant_id"].nunique())
+                st.metric("Restaurantes", df["restaurant_id"].nunique())
             with col2:
-                st.metric("Reviews", len(df))
+                st.metric("Reseñas", len(df))
         else:
-            st.warning("No data loaded")
+            st.warning("No hay datos cargados")
 
 
 def main():

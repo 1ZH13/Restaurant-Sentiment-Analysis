@@ -13,27 +13,28 @@ from dashboard.config import CLUSTER_COLORS
 def render(df: pd.DataFrame):
     """Render the Clustering page with enhanced UI."""
 
-    st.markdown("### Restaurant Clusters")
+    st.markdown("### Grupos de restaurantes")
 
     if "cluster" not in df.columns:
-        st.warning("Clustering not yet performed.")
+        st.warning("El agrupamiento aún no se ha ejecutado.")
         return
 
     # Cluster summary cards
     cluster_counts = df.groupby("cluster")["restaurant_id"].nunique().reset_index()
-    cluster_counts.columns = ["Cluster", "Count"]
+    cluster_counts.columns = ["Grupo", "Cantidad"]
 
-    st.markdown("#### Cluster Distribution")
+    st.markdown("#### Distribución de grupos")
 
     cols = st.columns(len(cluster_counts))
 
     for i, (_, row) in enumerate(cluster_counts.iterrows()):
-        cluster_id = int(row["Cluster"])
+        cluster_id = int(row["Grupo"])
+        restaurant_label = "restaurante" if int(row["Cantidad"]) == 1 else "restaurantes"
         with cols[i]:
             st.markdown(f"""
             <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; border: 1px solid {CLUSTER_COLORS[cluster_id % len(CLUSTER_COLORS)]}; text-align: center;">
-                <h2 style="margin: 0; color: {CLUSTER_COLORS[cluster_id % len(CLUSTER_COLORS)]};">Cluster {cluster_id}</h2>
-                <p style="margin: 8px 0 0 0; font-size: 24px;">{row["Count"]} restaurants</p>
+                <h2 style="margin: 0; color: {CLUSTER_COLORS[cluster_id % len(CLUSTER_COLORS)]};">Grupo {cluster_id}</h2>
+                <p style="margin: 8px 0 0 0; font-size: 24px;">{row["Cantidad"]} {restaurant_label}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -43,13 +44,13 @@ def render(df: pd.DataFrame):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### Cluster Size Distribution")
+        st.markdown("#### Distribución de tamaño por grupo")
 
         fig = go.Figure(data=[go.Pie(
-            labels=[f"Cluster {int(c)}" for c in cluster_counts["Cluster"]],
-            values=cluster_counts["Count"],
+            labels=[f"Grupo {int(c)}" for c in cluster_counts["Grupo"]],
+            values=cluster_counts["Cantidad"],
             hole=0.5,
-            marker=dict(colors=[CLUSTER_COLORS[int(c) % len(CLUSTER_COLORS)] for c in cluster_counts["Cluster"]])
+            marker=dict(colors=[CLUSTER_COLORS[int(c) % len(CLUSTER_COLORS)] for c in cluster_counts["Grupo"]])
         )])
 
         fig.update_layout(
@@ -61,22 +62,22 @@ def render(df: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.markdown("#### Average Rating by Cluster")
+        st.markdown("#### Calificación promedio por grupo")
 
         # Calculate cluster statistics
         cluster_stats = df.groupby("cluster").agg({
             "overall_rating": "mean",
             "restaurant_id": "nunique"
         }).reset_index()
-        cluster_stats.columns = ["Cluster", "Avg Rating", "Restaurant Count"]
+        cluster_stats.columns = ["Grupo", "Calificación prom.", "Cantidad de restaurantes"]
 
-        colors = [CLUSTER_COLORS[int(c) % len(CLUSTER_COLORS)] for c in cluster_stats["Cluster"]]
+        colors = [CLUSTER_COLORS[int(c) % len(CLUSTER_COLORS)] for c in cluster_stats["Grupo"]]
 
         fig = go.Figure(data=[go.Bar(
-            x=[f"Cluster {int(c)}" for c in cluster_stats["Cluster"]],
-            y=cluster_stats["Avg Rating"],
+            x=[f"Grupo {int(c)}" for c in cluster_stats["Grupo"]],
+            y=cluster_stats["Calificación prom."],
             marker_color=colors,
-            text=[f"{r:.2f}" for r in cluster_stats["Avg Rating"]],
+            text=[f"{r:.2f}" for r in cluster_stats["Calificación prom."]],
             textposition='auto'
         )])
 
@@ -87,13 +88,13 @@ def render(df: pd.DataFrame):
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#FAFAFA'),
             yaxis=dict(range=[0, 5.5]),
-            yaxis_title="Average Rating"
+            yaxis_title="Calificación promedio"
         )
         st.plotly_chart(fig, use_container_width=True)
 
     # Cluster profiles table
     st.markdown("---")
-    st.markdown("#### Cluster Profiles")
+    st.markdown("#### Perfiles de grupo")
 
     cluster_profiles = []
 
@@ -101,17 +102,17 @@ def render(df: pd.DataFrame):
         cluster_df = df[df["cluster"] == cluster_id]
 
         profile = {
-            "Cluster": f"Cluster {cluster_id}",
-            "Restaurants": cluster_df["restaurant_id"].nunique(),
-            "Avg Rating": f"{cluster_df['overall_rating'].mean():.2f}",
-            "Reviews": len(cluster_df)
+            "Grupo": f"Grupo {cluster_id}",
+            "Restaurantes": cluster_df["restaurant_id"].nunique(),
+            "Calificación prom.": f"{cluster_df['overall_rating'].mean():.2f}",
+            "Reseñas": len(cluster_df)
         }
 
         # Sentiment averages
         sentiment_cols = [col for col in df.columns if col.startswith("sentiment_") and col.endswith("_score")]
         for col in sentiment_cols:
             aspect = col.replace("sentiment_", "").replace("_score", "").capitalize()
-            profile[f"Avg {aspect}"] = f"{cluster_df[col].mean():.2f}"
+            profile[f"Prom. {aspect}"] = f"{cluster_df[col].mean():.2f}"
 
         cluster_profiles.append(profile)
 
@@ -125,12 +126,12 @@ def render(df: pd.DataFrame):
 
     # Top restaurants per cluster
     st.markdown("---")
-    st.markdown("#### Top Restaurants per Cluster")
+    st.markdown("#### Mejores restaurantes por grupo")
 
     selected_cluster = st.selectbox(
-        "Select a cluster:",
+        "Selecciona un grupo:",
         options=sorted(df["cluster"].unique()),
-        format_func=lambda x: f"Cluster {x}"
+        format_func=lambda x: f"Grupo {x}"
     )
 
     if selected_cluster is not None:
@@ -140,18 +141,18 @@ def render(df: pd.DataFrame):
             "overall_rating": "mean"
         }).reset_index().sort_values("overall_rating", ascending=False).head(10)
 
-        top_restaurants.columns = ["ID", "Restaurant", "Rating"]
+        top_restaurants.columns = ["ID", "Restaurante", "Calificación"]
 
         st.dataframe(
             top_restaurants,
             use_container_width=True,
             hide_index=True,
-            column_config={"Rating": st.column_config.NumberColumn(format="%.2f ")}
+            column_config={"Calificación": st.column_config.NumberColumn(format="%.2f ")}
         )
 
     # Scatter plot
     st.markdown("---")
-    st.markdown("#### Restaurant Map (Rating vs Sentiment)")
+    st.markdown("#### Mapa de restaurantes (calificación vs. sentimiento)")
 
     if "overall_sentiment_score" not in df.columns:
         sentiment_cols = [col for col in df.columns if col.startswith("sentiment_") and col.endswith("_score")]
@@ -171,7 +172,13 @@ def render(df: pd.DataFrame):
             color="cluster",
             hover_data=["restaurant_name"],
             color_discrete_sequence=CLUSTER_COLORS[:len(scatter_df["cluster"].unique())],
-            size=[20] * len(scatter_df)
+            size=[20] * len(scatter_df),
+            labels={
+                "overall_rating": "Calificación promedio",
+                "overall_sentiment_score": "Puntaje promedio de sentimiento",
+                "cluster": "Grupo",
+                "restaurant_name": "Restaurante",
+            },
         )
 
         fig.update_layout(
@@ -179,8 +186,8 @@ def render(df: pd.DataFrame):
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#FAFAFA'),
-            xaxis_title="Average Rating",
-            yaxis_title="Average Sentiment Score",
-            legend_title="Cluster"
+            xaxis_title="Calificación promedio",
+            yaxis_title="Puntaje promedio de sentimiento",
+            legend_title="Grupo"
         )
         st.plotly_chart(fig, use_container_width=True)
