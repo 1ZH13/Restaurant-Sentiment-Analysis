@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from dashboard.utils.aspects import ASPECT_LABELS, ASPECTS, all_aspect_summaries, coverage_note, mention_mask, overall_sentiment
+from dashboard.utils.restaurants import format_restaurant_label, restaurant_directory
 
 TRANSPARENT = "rgba(0,0,0,0)"
 
@@ -45,16 +46,15 @@ def render(df: pd.DataFrame):
 
     st.markdown("### Selecciona un restaurante")
 
-    restaurants = (
-        df.groupby(["restaurant_id", "restaurant_name"], as_index=False)
-          .agg(rating=("overall_rating", "mean"), resenas=("review_text", "size"))
-          .sort_values("restaurant_name")
-    )
+    # One row per restaurant, even when a restaurant carries two spellings from
+    # the two sources.
+    restaurants = restaurant_directory(df)
 
     query = st.text_input("Buscar restaurante", key="detalle_search",
                           placeholder="Escribe parte del nombre...")
     if query.strip():
-        mask = restaurants["restaurant_name"].str.lower().str.contains(query.strip().lower(), regex=False)
+        mask = restaurants["restaurant_name"].astype(str).str.lower().str.contains(
+            query.strip().lower(), regex=False)
         restaurants = restaurants[mask]
 
     if restaurants.empty:
@@ -64,9 +64,7 @@ def render(df: pd.DataFrame):
     lookup = restaurants.set_index("restaurant_id")
 
     def _format(rid):
-        row = lookup.loc[rid]
-        rating = f"{row['rating']:.1f}" if pd.notna(row["rating"]) else "s/c"
-        return f"{rating} - {row['restaurant_name']} ({int(row['resenas'])} resenas)"
+        return format_restaurant_label(lookup.loc[rid], show_reviews=True)
 
     selected_id = st.selectbox(
         "Elige un restaurante para explorar:",

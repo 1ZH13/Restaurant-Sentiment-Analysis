@@ -14,6 +14,7 @@ import streamlit as st
 
 from dashboard.config import CLUSTER_COLORS
 from dashboard.utils.aspects import ASPECTS, ASPECT_LABELS, mention_mask, overall_sentiment
+from dashboard.utils.restaurants import restaurant_directory
 
 TRANSPARENT = "rgba(0,0,0,0)"
 
@@ -160,15 +161,14 @@ def _render_members(data: pd.DataFrame, cluster_ids) -> None:
         st.info("Ningun restaurante coincide con esa busqueda.")
         return
 
+    # restaurant_directory collapses the two spellings a unified restaurant can
+    # have, so it is not listed twice.
     members = (
-        subset.groupby(["restaurant_id", "restaurant_name"], as_index=False)
-              .agg(Calificacion=("overall_rating", "mean"),
-                   Resenas=("review_text", "size"))
-              .sort_values("Calificacion", ascending=False)
-    )
-    members = members.rename(columns={"restaurant_name": "Restaurante"})[
-        ["Restaurante", "Calificacion", "Resenas"]
-    ]
+        restaurant_directory(subset)
+        .rename(columns={"restaurant_name": "Restaurante", "rating": "Calificacion",
+                         "resenas": "Resenas"})
+        .sort_values("Calificacion", ascending=False)
+    )[["Restaurante", "Calificacion", "Resenas"]]
 
     st.dataframe(
         members, width="stretch", hide_index=True,

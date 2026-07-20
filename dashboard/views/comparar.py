@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import numpy as np
 
 from dashboard.utils.aspects import ASPECT_LABELS, mention_mask
+from dashboard.utils.restaurants import format_restaurant_label, restaurant_directory
 
 
 def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
@@ -23,20 +24,18 @@ def render(df: pd.DataFrame):
 
     st.markdown("### Selecciona restaurantes para comparar")
 
-    # Get unique restaurants
-    restaurants = df.groupby(["restaurant_id", "restaurant_name"]).agg({
-        "overall_rating": "first",
-        "category": "first",
-        "price_range": "first"
-    }).reset_index()
+    # One row per restaurant, even when a restaurant carries two spellings from
+    # the two sources.
+    restaurants = restaurant_directory(df)
 
     # Narrow the (long) selector list before choosing.
     query = st.text_input("Buscar restaurante", key="comparar_search",
                           placeholder="Escribe parte del nombre o la cocina...")
     if query.strip():
         needle = query.strip().lower()
-        haystack = (restaurants["restaurant_name"].fillna("").astype(str).str.lower() + " "
-                    + restaurants["category"].fillna("").astype(str).str.lower())
+        haystack = restaurants["restaurant_name"].fillna("").astype(str).str.lower()
+        if "category" in restaurants.columns:
+            haystack = haystack + " " + restaurants["category"].fillna("").astype(str).str.lower()
         restaurants = restaurants[haystack.str.contains(needle, regex=False)]
 
     if restaurants.empty:
@@ -46,10 +45,7 @@ def render(df: pd.DataFrame):
     lookup = restaurants.set_index("restaurant_id")
 
     def _format(rid):
-        row = lookup.loc[rid]
-        # Restaurants without a rating must not render as "nan".
-        rating = f"{row['overall_rating']:.1f}" if pd.notna(row["overall_rating"]) else "s/c"
-        return f"{rating} - {row['restaurant_name']}"
+        return format_restaurant_label(lookup.loc[rid])
 
     # Restaurant selector with better UI
     selected_restaurants = st.multiselect(
