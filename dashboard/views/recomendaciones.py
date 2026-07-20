@@ -84,7 +84,45 @@ def render(df: pd.DataFrame):
 
     st.markdown("---")
 
-    if not st.button("Obtener recomendaciones", type="primary", width="stretch"):
+    preferences = {
+        "category": None if selected_category == ANY else selected_category,
+        "max_price": None if selected_price == ANY else selected_price,
+        "priority_aspects": priority_aspects,
+        "location": None if selected_zone == ANY else selected_zone,
+    }
+
+    pressed = st.button("Obtener recomendaciones", type="primary", width="stretch")
+
+    if pressed:
+        # Rating is a hard filter; the rest are scored preferences.
+        candidates = df
+        if min_rating > 0 and "overall_rating" in df.columns:
+            candidates = candidates[candidates["overall_rating"] >= min_rating]
+
+        if candidates.empty:
+            st.session_state.pop("rec_results", None)
+            st.warning(f"Ningun restaurante alcanza una calificacion de {min_rating:.1f}. "
+                       "Proba bajando el minimo.")
+            return
+
+        with st.spinner("Analizando restaurantes..."):
+            recommender = RestaurantRecommender(candidates)
+            recommendations = recommender.recommend(preferences, top_n=5)
+
+        # Results are kept in session state on purpose. st.button is only True
+        # on the run that handled the click, so without this the whole block
+        # disappeared as soon as the user touched any other control - which
+        # reads as if the page did nothing.
+        st.session_state["rec_results"] = {
+            "recommendations": recommendations,
+            "preferences": preferences,
+            "min_rating": min_rating,
+            "evaluated": int(candidates["restaurant_id"].nunique()),
+        }
+
+    stored = st.session_state.get("rec_results")
+
+    if not stored:
         st.markdown("""
         <div style="background-color: rgba(78, 205, 196, 0.1); padding: 24px; border-radius: 12px;
                     text-align: center; border: 1px dashed #4ECDC4;">
@@ -94,34 +132,20 @@ def render(df: pd.DataFrame):
         """, unsafe_allow_html=True)
         return
 
-    # Rating is a hard filter; the rest are scored preferences.
-    candidates = df
-    if min_rating > 0 and "overall_rating" in df.columns:
-        candidates = candidates[candidates["overall_rating"] >= min_rating]
-
-    if candidates.empty:
-        st.warning(f"Ningun restaurante alcanza una calificacion de {min_rating:.1f}. "
-                   "Proba bajando el minimo.")
-        return
-
-    preferences = {
-        "category": None if selected_category == ANY else selected_category,
-        "max_price": None if selected_price == ANY else selected_price,
-        "priority_aspects": priority_aspects,
-        "location": None if selected_zone == ANY else selected_zone,
-    }
-
-    with st.spinner("Analizando restaurantes..."):
-        recommender = RestaurantRecommender(candidates)
-        recommendations = recommender.recommend(preferences, top_n=5)
+    recommendations = stored["recommendations"]
 
     if not recommendations:
         st.warning("No se encontraron recomendaciones. Proba ajustando tus preferencias.")
         return
 
     st.markdown("### Tus mejores recomendaciones")
-    st.caption(f"Evaluamos {candidates['restaurant_id'].nunique()} restaurantes que cumplen "
-               f"la calificacion minima de {min_rating:.1f}.")
+    st.caption(f"Evaluamos {stored['evaluated']} restaurantes que cumplen "
+               f"la calificacion minima de {stored['min_rating']:.1f}.")
+
+    # Tell the user when what they are looking at no longer matches the form.
+    if stored["preferences"] != preferences or stored["min_rating"] != min_rating:
+        st.info("Cambiaste tus preferencias. Presiona **Obtener recomendaciones** "
+                "para actualizar la lista.")
 
     for i, rec in enumerate(recommendations, 1):
         color = "#28a745" if rec.match_score >= 80 else "#ffc107" if rec.match_score >= 60 else "#dc3545"
