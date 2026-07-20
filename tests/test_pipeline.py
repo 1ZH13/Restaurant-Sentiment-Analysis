@@ -147,9 +147,12 @@ class TestETLPipeline:
         df = add_sentiment_columns(df)
         df = encode_categorical_features(df)
 
-        # Cluster
-        clusterer = RestaurantClusterer(n_clusters=3, random_state=42)
+        # Cluster. Features are per restaurant, and silhouette needs at least
+        # one more sample than clusters, so k must stay below the restaurant count.
+        n_restaurants = df["restaurant_id"].nunique()
+        clusterer = RestaurantClusterer(n_clusters=n_restaurants - 1, random_state=42)
         features = clusterer.engineer_features(df)
+        assert features.shape[0] == n_restaurants
         clusters = clusterer.fit_predict(features)
 
         # Get silhouette score

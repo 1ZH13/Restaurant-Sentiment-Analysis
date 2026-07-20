@@ -39,11 +39,21 @@ class TestRestaurantClusterer:
         assert clusterer.random_state == 123
 
     def test_engineer_features_shape(self, clusterer, sample_reviews_df):
-        """Test that feature matrix has correct shape."""
+        """Feature matrix has one row per restaurant, not per review."""
         features = clusterer.engineer_features(sample_reviews_df)
 
-        assert features.shape[0] == len(sample_reviews_df)
+        assert features.shape[0] == sample_reviews_df["restaurant_id"].nunique()
         assert features.shape[1] > 0
+
+    def test_engineer_features_aggregates_reviews(self, clusterer, sample_reviews_df):
+        """A restaurant with several reviews contributes a single row."""
+        n_restaurants = sample_reviews_df["restaurant_id"].nunique()
+        assert n_restaurants < len(sample_reviews_df), "fixture needs repeated restaurants"
+
+        features = clusterer.engineer_features(sample_reviews_df)
+
+        assert features.shape[0] == n_restaurants
+        assert len(clusterer.restaurant_ids) == n_restaurants
 
     def test_engineer_features_includes_rating(self, clusterer, sample_reviews_df):
         """Test that rating features are included."""
@@ -68,7 +78,7 @@ class TestRestaurantClusterer:
         features = clusterer.engineer_features(sample_reviews_df)
         clusters = clusterer.fit_predict(features)
 
-        assert len(clusters) == len(sample_reviews_df)
+        assert len(clusters) == sample_reviews_df["restaurant_id"].nunique()
         assert all(0 <= c < clusterer.n_clusters for c in clusters)
 
     def test_fit_predict_consistent_results(self, clusterer, sample_reviews_df):
@@ -99,13 +109,23 @@ class TestRestaurantClusterer:
             assert "count" in profile
 
     def test_add_cluster_labels(self, clusterer, sample_reviews_df):
-        """Test that cluster labels are added to dataframe."""
+        """Restaurant-level labels are mapped back onto every review."""
         features = clusterer.engineer_features(sample_reviews_df)
         clusters = clusterer.fit_predict(features)
         result = clusterer.add_cluster_labels(sample_reviews_df, clusters)
 
         assert "cluster" in result.columns
         assert len(result) == len(sample_reviews_df)
+        assert result["cluster"].notna().all()
+
+    def test_cluster_is_consistent_per_restaurant(self, clusterer, sample_reviews_df):
+        """Every review of a restaurant carries that restaurant's cluster."""
+        features = clusterer.engineer_features(sample_reviews_df)
+        clusters = clusterer.fit_predict(features)
+        result = clusterer.add_cluster_labels(sample_reviews_df, clusters)
+
+        per_restaurant = result.groupby("restaurant_id")["cluster"].nunique()
+        assert (per_restaurant == 1).all()
 
 
 class TestFindOptimalK:
@@ -157,27 +177,48 @@ class TestAssignClusterNames:
         assert isinstance(result, dict)
         assert len(result) == 2
 
-    def test_premium_cluster(self):
-        """Test that high-rated clusters get premium name."""
+    def test_names_are_unique(self):
+        """Names describe what sets a cluster apart, so they must not repeat.
+
+        The previous threshold-based naming labelled 4 of 5 clusters
+        "Premium Fine Dining", which told the reader nothing.
+        """
         profiles = {
-            0: {"avg_rating": 4.8, "avg_comida_sentiment": 0.9, "avg_servicio_sentiment": 0.8,
-                "price_distribution": {"$$$$": 5}}
+            0: {"avg_rating": 4.9, "avg_price_level": 4.0, "avg_comida_sentiment": 0.9,
+                "avg_servicio_sentiment": 0.8, "avg_ambiente_sentiment": 0.7, "review_count": 10},
+            1: {"avg_rating": 4.7, "avg_price_level": 3.5, "avg_comida_sentiment": 0.8,
+                "avg_servicio_sentiment": 0.9, "avg_ambiente_sentiment": 0.6, "review_count": 40},
+            2: {"avg_rating": 4.6, "avg_price_level": 1.2, "avg_comida_sentiment": 0.5,
+                "avg_servicio_sentiment": 0.4, "avg_ambiente_sentiment": 0.9, "review_count": 15},
         }
 
         result = assign_cluster_names(profiles)
 
-        assert "Premium" in result[0] or "Fine Dining" in result[0]
+        assert len(result) == 3
+        assert len(set(result.values())) == 3
 
-    def test_budget_cluster(self):
-        """Test that low-price clusters get budget name."""
+    def test_highest_rated_cluster_named_for_rating(self):
+        """The cluster that stands out on rating is named after it."""
         profiles = {
-            0: {"avg_rating": 3.5, "avg_comida_sentiment": 0.3, "avg_servicio_sentiment": 0.3,
-                "price_distribution": {"$": 5}}
+            0: {"avg_rating": 4.9, "avg_price_level": 2.0, "review_count": 10},
+            1: {"avg_rating": 3.2, "avg_price_level": 2.0, "review_count": 10},
+            2: {"avg_rating": 3.3, "avg_price_level": 2.0, "review_count": 10},
         }
 
         result = assign_cluster_names(profiles)
 
-        assert "Budget" in result[0] or "Econom" in result[0]
+        assert result[0] == "Mejor calificados"
+
+    def test_cheapest_cluster_not_labelled_high_end(self):
+        """A cluster below the average price level is never called 'Alta gama'."""
+        profiles = {
+            0: {"avg_rating": 4.0, "avg_price_level": 4.0, "review_count": 10},
+            1: {"avg_rating": 4.0, "avg_price_level": 1.0, "review_count": 10},
+        }
+
+        result = assign_cluster_names(profiles)
+
+        assert result[1] != "Alta gama"
 
     def test_handles_empty_profile(self):
         """Test that empty profiles don't cause errors."""
@@ -199,13 +240,14 @@ class TestClusteringIntegration:
         # Initialize
         clusterer = RestaurantClusterer(n_clusters=3, random_state=42)
 
-        # Engineer features
+        # Engineer features (one row per restaurant)
+        n_restaurants = sample_reviews_df["restaurant_id"].nunique()
         features = clusterer.engineer_features(sample_reviews_df)
-        assert features.shape[0] == len(sample_reviews_df)
+        assert features.shape[0] == n_restaurants
 
         # Fit predict
         clusters = clusterer.fit_predict(features)
-        assert len(clusters) == len(sample_reviews_df)
+        assert len(clusters) == n_restaurants
 
         # Get profiles
         profiles = clusterer.get_cluster_profiles(sample_reviews_df, clusters)
