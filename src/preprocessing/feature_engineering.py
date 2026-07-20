@@ -2,9 +2,14 @@
 Feature engineering module for restaurant analysis.
 """
 
-import pandas as pd
-import numpy as np
+import re
+import unicodedata
 from typing import Dict, List
+
+import numpy as np
+import pandas as pd
+
+from src.preprocessing.cleaner import encode_price
 
 
 def calculate_restaurant_stats(df: pd.DataFrame) -> pd.DataFrame:
@@ -37,33 +42,58 @@ def calculate_restaurant_stats(df: pd.DataFrame) -> pd.DataFrame:
     return restaurant_stats
 
 
-def encode_categorical_features(df: pd.DataFrame, categories: List[str] = None) -> pd.DataFrame:
+def _slugify(value: str) -> str:
+    """Turn a category label into a safe, readable column suffix.
+
+    Truncating the raw label at 20 characters used to leave punctuation inside
+    the column name ("cat_latinoamericana,_con") and could make two different
+    cuisines collide on the same column.
+    """
+    text = unicodedata.normalize("NFKD", str(value))
+    text = "".join(c for c in text if not unicodedata.combining(c)).lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    return text[:24].rstrip("_") or "otros"
+
+
+def encode_categorical_features(df: pd.DataFrame, categories: List[str] = None,
+                                top_n: int = 10) -> pd.DataFrame:
     """Encode categorical features for ML models."""
     df_encoded = df.copy()
 
-    # Price range encoding
-    price_mapping = {
-        "$": 1,
-        "$$ - $$$": 2,
-        "$$$ - $$$$": 3,
-        "$$$$": 4,
-        "Cheap Eats": 1,
-        "Mid-range": 2,
-        "Fine Dining": 4
-    }
-
+    # Price range: reuse the pipeline's single price definition rather than a
+    # local map, which only knew the labels of one of the two sources and so
+    # silently encoded everything as the fallback value.
     if "price_range" in df_encoded.columns:
-        df_encoded["price_range_encoded"] = df_encoded["price_range"].map(price_mapping).fillna(2)
+        df_encoded["price_range_encoded"] = (
+            df_encoded["price_range"].apply(encode_price).fillna(2.0)
+        )
 
-    # Category encoding (simple one-hot for top categories)
-    if categories is None and "category" in df_encoded.columns:
-        # Get top 10 most common categories
-        categories = df_encoded["category"].value_counts().head(10).index.tolist()
+    # One-hot the most common cuisines. category_primary is preferred: the raw
+    # category is a compound label ("Italiana, Pizzeria"), which produces almost
+    # as many distinct values as there are restaurants.
+    source_col = "category_primary" if "category_primary" in df_encoded.columns else "category"
+    if source_col not in df_encoded.columns:
+        return df_encoded
 
-    if categories:
-        for cat in categories:
-            col_name = f"cat_{cat.lower().replace(' ', '_')[:20]}"
-            df_encoded[col_name] = df_encoded["category"].str.lower().str.contains(cat.lower(), na=False).astype(int)
+    if categories is None:
+        categories = df_encoded[source_col].dropna().value_counts().head(top_n).index.tolist()
+
+    lowered = df_encoded[source_col].astype(str).str.lower()
+    used = set()
+    for category in categories:
+        col_name = f"cat_{_slugify(category)}"
+        # Guard against two labels slugifying to the same column.
+        suffix = 2
+        while col_name in used:
+            col_name = f"cat_{_slugify(category)}_{suffix}"
+            suffix += 1
+        used.add(col_name)
+
+        # regex=False: cuisine labels contain characters like "(" and "+" that
+        # would otherwise be interpreted as a pattern.
+        df_encoded[col_name] = lowered.str.contains(
+            str(category).lower(), na=False, regex=False
+        ).astype(int)
 
     return df_encoded
 
