@@ -1,9 +1,15 @@
 # Restaurant Sentiment Analysis Platform
 # Dependencies
+#
+# Los minimos de abajo estan verificados, no estimados:
+#   streamlit 1.52 es la primera version cuyo st.plotly_chart acepta el
+#   parametro `width`. Con 1.40-1.50 el dashboard falla en cada grafico, aunque
+#   `st.navigation` (que tambien usamos) ya exista desde 1.36.
+#   pandas 2.0 es el minimo para to_datetime(format="mixed"), que usa el cleaner.
 pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
-streamlit>=1.28.0
+streamlit>=1.52.0
 plotly>=5.18.0
 beautifulsoup4>=4.12.0
 requests>=2.31.0

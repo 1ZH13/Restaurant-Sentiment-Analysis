@@ -41,9 +41,25 @@ The project performs the following operations:
 
 ### 3.3 Current dataset size
 Verified project data currently contains:
-- 59 reviews from Degusta,
+- 973 reviews from Degusta,
 - 24 reviews from RestaurantGuru,
-- 83 unified reviews in the processed raw dataset.
+- 997 unified reviews across 207 restaurants in the processed dataset.
+
+Field coverage: price range 100%, zone 100%, restaurant rating 100%, cuisine 99%,
+per-review rating 98%, review date 98%. Review dates span 2019 to 2026.
+
+### 3.4 Identity and deduplication
+Restaurants are identified by a canonical id derived from the normalised
+restaurant name, so the same venue listed by both sources collapses into one
+entity. Per-source ids are retained in `source_restaurant_id` for traceability.
+
+RestaurantGuru ids are derived from an MD5 of the URL slug. They were previously
+built from Python's built-in `hash()`, which is randomised per process, so every
+run produced different ids for the same restaurant and nothing could be joined or
+deduplicated across runs.
+
+Reviews are deduplicated within a restaurant by comparing normalised text
+(lowercased, accents and punctuation removed).
 
 ---
 
@@ -129,14 +145,28 @@ It helps identify patterns such as:
 The clustering module is in:
 - src/clustering/restaurant_clusterer.py
 
+Clustering is performed **at the restaurant level**: the reviews table is first
+aggregated to one row per restaurant, and the resulting labels are mapped back
+onto the reviews at the end. Aggregating matters — building the matrix with
+`groupby(...).transform(...)` yields one row per review with identical values
+repeated per restaurant, which both inflates the silhouette score and weights a
+restaurant by how many reviews it happens to have.
+
 It uses features such as:
 - average rating,
 - aspect sentiment averages,
 - review count,
-- price range,
-- text statistics.
+- average review length,
+- price level (1-4, from the shared price encoder).
 
-The clustering process also evaluates the best number of clusters using silhouette score.
+The number of clusters is selected with the silhouette score over k = 2..9, and
+the model is then trained with that value. The observed silhouette is around
+0.17, which is low: restaurants do not separate into sharply defined groups, and
+the figure is reported as-is rather than tuned upward.
+
+Each cluster is named after the metric on which it stands out relative to the
+other clusters (metrics are standardised across clusters), which guarantees
+distinct, informative names. The name is persisted in the `cluster_name` column.
 
 ---
 

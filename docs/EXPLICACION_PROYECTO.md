@@ -80,10 +80,11 @@ Archivos de datos principales:
 
 El proyecto documenta:
 
-- 83 resenas reales.
-- 20 restaurantes.
+- 997 resenas reales.
+- 207 restaurantes.
 - 2 fuentes de datos.
-- 9 categorias aproximadas.
+- 99 categorias de cocina.
+- 32 zonas de Ciudad de Panama.
 
 ## 5. Que es web scraping
 
@@ -291,7 +292,9 @@ Sirve para evaluar si los grupos formados por K-Means tienen sentido:
 - Un valor mas alto indica grupos mejor separados.
 - Un valor bajo indica que los grupos se mezclan mucho.
 
-En el proyecto se prueban diferentes valores de `k` y se selecciona el mejor segun esta metrica, aunque el clusterer esta configurado para trabajar con 5 clusters.
+En el proyecto se prueban valores de `k` de 2 a 9, se selecciona el mejor segun esta metrica **y el modelo se entrena con ese valor**. Antes el codigo calculaba el mejor `k` y luego lo ignoraba, entrenando siempre con 5 clusters fijos.
+
+El silhouette real del dataset ronda 0.17, que es un valor bajo: significa que los restaurantes no forman grupos nitidamente separados. Se reporta asi a proposito. Un valor mucho mas alto que aparecia antes (~0.58) era artificial, porque el clustering se hacia sobre filas de resenas repetidas: varias filas identicas del mismo restaurante estan a distancia cero entre si e inflan la metrica.
 
 ## 13. Clustering de restaurantes
 
@@ -466,15 +469,20 @@ No. El scraping es parte de la ingesta de datos. El dashboard usa archivos ya pr
 
 ### 10. Cuantas resenas tiene el dataset?
 
-El proyecto documenta 83 resenas reales: 59 de Degusta y 24 de RestaurantGuru.
+997 resenas reales: 973 de Degusta y 24 de RestaurantGuru.
 
 ### 11. Cuantos restaurantes analiza?
 
-Aproximadamente 20 restaurantes.
+207 restaurantes de Ciudad de Panama.
 
-### 12. Por que el dataset es pequeno?
+### 12. Por que Degusta aporta muchas mas resenas que RestaurantGuru?
 
-Porque el proyecto tiene alcance academico y depende de fuentes reales con restricciones de scraping. Aun asi, permite demostrar todo el flujo de datos, analisis y visualizacion.
+Por como responde cada sitio al scraping. Degusta entrega las 5 resenas mas
+recientes de cada ficha sin restricciones fuertes, y se pueden descubrir unos 220
+restaurantes combinando la portada con busquedas por tipo de cocina.
+RestaurantGuru limita agresivamente (devuelve HTTP 503 tras pocas peticiones), asi
+que su scraper avanza lento y con esperas crecientes. El alcance sigue siendo
+academico y acotado a Ciudad de Panama.
 
 ### 13. Que limitacion tiene un dataset pequeno?
 
