@@ -7,6 +7,8 @@ import numpy as np
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
+from src.preprocessing.cleaner import encode_price
+
 try:
     from openai import OpenAI
 except ImportError:
@@ -75,46 +77,64 @@ class RestaurantRecommender:
         return profiles
 
     def _calculate_match_score(self, restaurant: pd.Series, preferences: Dict) -> float:
-        """Calculate how well a restaurant matches user preferences."""
-        score = 0.0
-        weights = []
+        """Score how well a restaurant matches the preferences, from 0 to 100.
+
+        Each criterion contributes a 0-1 fraction of its own weight, and the
+        total is divided by the weights actually used. The previous version
+        summed raw magnitudes and divided by the *count* of weights, producing
+        values around 1-3 that the dashboard then rendered as "2% coincidencia".
+        """
+        earned = 0.0
+        total_weight = 0.0
 
         # Category match
         if preferences.get("category"):
-            if restaurant.get("category") and preferences["category"].lower() in str(restaurant.get("category")).lower():
-                score += 3.0
-            weights.append(3.0)
+            weight = 3.0
+            category = str(restaurant.get("category", "")).lower()
+            if category and preferences["category"].lower() in category:
+                earned += weight
+            total_weight += weight
 
-        # Price range match
+        # Price range: full credit at or below budget, tapering off above it.
         if preferences.get("max_price"):
-            price_map = {"$": 1, "$$ - $$$": 2, "$$$ - $$$$": 3, "$$$$": 4}
-            restaurant_price = price_map.get(str(restaurant.get("price_range", "")), 2)
-            max_price = price_map.get(preferences["max_price"], 4)
+            weight = 2.0
+            restaurant_price = encode_price(restaurant.get("price_range"))
+            max_price = encode_price(preferences["max_price"])
+            if restaurant_price is not None and max_price is not None:
+                if restaurant_price <= max_price:
+                    earned += weight
+                else:
+                    over = restaurant_price - max_price
+                    earned += weight * max(0.0, 1.0 - over / 3.0)
+                total_weight += weight
 
-            if restaurant_price <= max_price:
-                score += 2.0 * (1 - (restaurant_price - 1) / (max_price - 1 + 0.1))
-            weights.append(2.0)
+        # Location match
+        if preferences.get("location"):
+            weight = 2.0
+            location = str(restaurant.get("location", "")).lower()
+            if location and preferences["location"].lower() in location:
+                earned += weight
+            total_weight += weight
 
-        # Priority aspects
-        priority_aspects = preferences.get("priority_aspects", [])
-        if priority_aspects:
-            for aspect in priority_aspects:
-                col = f"sentiment_{aspect}_score"
-                if col in restaurant.index and pd.notna(restaurant.get(col)):
-                    # Higher sentiment score = higher match
-                    score += float(restaurant.get(col, 0)) * 2.0
-                    weights.append(2.0)
+        # Priority aspects: map sentiment from [-1, 1] onto [0, 1].
+        for aspect in preferences.get("priority_aspects", []) or []:
+            col = f"sentiment_{aspect}_score"
+            if col in restaurant.index and pd.notna(restaurant.get(col)):
+                weight = 3.0
+                sentiment = float(restaurant.get(col))
+                earned += weight * (sentiment + 1.0) / 2.0
+                total_weight += weight
 
-        # Rating bonus
+        # Rating always contributes so ties break towards better restaurants.
         if pd.notna(restaurant.get("overall_rating")):
-            score += float(restaurant.get("overall_rating")) / 5.0 * 2.0
-            weights.append(2.0)
+            weight = 2.0
+            earned += weight * float(restaurant.get("overall_rating")) / 5.0
+            total_weight += weight
 
-        # Normalize score
-        if weights:
-            score = score / len(weights) if weights else 0.0
+        if total_weight == 0:
+            return 0.0
 
-        return score
+        return round(earned / total_weight * 100.0, 1)
 
     def recommend(self, preferences: Dict, top_n: int = 5) -> List[RecommendationResult]:
         """
