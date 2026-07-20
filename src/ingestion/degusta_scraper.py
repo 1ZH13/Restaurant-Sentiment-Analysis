@@ -2,38 +2,65 @@
 Web scraper for Degusta Panama restaurant reviews.
 https://www.degustapanama.com/
 
-Note: Full review text is loaded via JavaScript. This scraper collects:
-- Restaurant metadata (name, category, location, price)
-- Overall rating and review count
-- Aspect ratings (Comida, Servicio, Ambiente)
+Degusta renders its restaurant pages with schema.org microdata (itemprop
+attributes), which carries far more than the visible HTML classes suggest:
+
+    servesCuisine   -> real cuisine/category
+    priceRange      -> real price range
+    address         -> street address (zone can be derived from it)
+    aggregateRating -> restaurant-level rating and review count
+    review          -> the 5 most recent reviews, each with its own
+                       reviewBody, author, ratingValue and datePublished
+
+Everything below is read from those microdata attributes, so the scraper does
+not depend on CSS class names (which change often and previously caused the
+category/price/location fields to come back empty).
+
+The site has no pagination on /panama/search, so restaurants are discovered by
+combining several entry points: the city landing page plus one search query per
+cuisine. That reaches ~220 distinct restaurants.
 """
 
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-import time
 import random
 import re
-from typing import List, Dict, Optional
+import time
 from pathlib import Path
-import os
+from typing import Dict, List, Optional
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.degustapanama.com"
 SEARCH_URL = f"{BASE_URL}/panama/search"
 
+# Search terms used to widen restaurant discovery beyond the landing page.
+CUISINE_QUERIES = [
+    "sushi", "italiana", "china", "mexicana", "peruana", "mariscos", "carnes",
+    "pizza", "hamburguesa", "panamena", "espanola", "francesa", "vegetariana",
+    "cafe", "postres", "arabe", "india", "tailandesa", "americana", "criolla",
+    "asiatica", "argentina", "venezolana", "colombiana", "parrilla", "desayuno",
+]
 
-def get_session():
-    """Create a requests session with proper headers."""
+# Addresses end with the neighbourhood, sometimes followed by the city:
+#   "Wanders and Yoo - Paitilla"                       -> "Paitilla"
+#   "Calle 50 ..., Casa 1206 - Bella Vista - Panamá"   -> "Bella Vista"
+CITY_TOKENS = {"panama", "panamá", "ciudad de panama", "ciudad de panamá"}
+
+
+def get_session() -> requests.Session:
+    """Create a requests session with browser-like headers."""
     session = requests.Session()
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     })
     return session
 
 
-def get_page(session, url: str, delay: float = 2.0) -> Optional[BeautifulSoup]:
+def get_page(session: requests.Session, url: str, delay: float = 1.5) -> Optional[BeautifulSoup]:
     """Fetch a page with rate limiting."""
     time.sleep(random.uniform(delay, delay * 1.5))
     try:
@@ -45,207 +72,186 @@ def get_page(session, url: str, delay: float = 2.0) -> Optional[BeautifulSoup]:
         return None
 
 
-def get_restaurant_links_from_search(soup: BeautifulSoup) -> List[Dict]:
-    """Extract restaurant links and basic info from search page."""
-    restaurants = []
+def _itemprop(soup: BeautifulSoup, prop: str) -> Optional[str]:
+    """Return the value of the first element carrying ``itemprop=prop``.
 
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        if '/restaurante/' in href and 'reservar' not in href and 'agregar' not in href:
-            # Extract restaurant info from the link and surrounding elements
-            parent = a.find_parent(['div', 'li', 'article'])
-            if parent:
-                text = parent.get_text(strip=True)
+    Microdata values live either in a ``content`` attribute or in the element
+    text, so both are checked.
+    """
+    el = soup.select_one(f'[itemprop="{prop}"]')
+    if el is None:
+        return None
+    value = el.get("content") or el.get_text(" ", strip=True)
+    value = (value or "").strip()
+    return value or None
 
-                # Extract ID from URL
-                match = re.search(r'restaurante/[^_]+_(\d+)', href)
-                restaurant_id = match.group(1) if match else None
 
-                if restaurant_id:
-                    full_url = f"{BASE_URL}{href}" if href.startswith('/') else href
+def _to_float(value: Optional[str]) -> Optional[float]:
+    """Parse a rating/count string into a float, honouring a "K" suffix.
 
-                    restaurants.append({
-                        'restaurant_id': restaurant_id,
-                        'url': full_url,
-                        'raw_text': text[:200]
-                    })
+    Degusta writes large review counts as "1.9K", which must become 1900 rather
+    than 1.9.
+    """
+    if not value:
+        return None
+    text = str(value)
+    match = re.search(r"\d+(?:[.,]\d+)?", text)
+    if not match:
+        return None
+    try:
+        number = float(match.group(0).replace(",", "."))
+    except ValueError:
+        return None
+    if re.match(r"\s*[kK]", text[match.end():]):
+        number *= 1000
+    return number
 
-    # Deduplicate by restaurant_id
-    seen = set()
-    unique = []
-    for r in restaurants:
-        if r['restaurant_id'] not in seen:
-            seen.add(r['restaurant_id'])
-            unique.append(r)
 
-    return unique
+def _zone_from_address(address: str) -> Optional[str]:
+    """Derive the neighbourhood from a Degusta address string."""
+    parts = [p.strip() for p in address.split(" - ") if p.strip()]
+    # Drop trailing city names so the neighbourhood is the last part left.
+    while parts and parts[-1].lower() in CITY_TOKENS:
+        parts.pop()
+    if len(parts) < 2:
+        return None
+    return parts[-1]
+
+
+def extract_aspect_ratings(soup: BeautifulSoup) -> Dict[str, float]:
+    """Extract Degusta's own per-aspect scores (Comida / Servicio / Ambiente).
+
+    These live in the ``.dg-reviews-stats`` block as "Comida 4.4 /5 Servicio
+    4.5 /5 Ambiente 4.6 /5". The class must be matched exactly: a looser
+    ``[class*="reviews-stats"]`` selector matches the section *title* first and
+    returns no numbers at all.
+
+    Having the site's own aspect scores is useful beyond reporting - they act as
+    a reference to sanity-check the lexicon's aspect sentiment against.
+    """
+    section = soup.select_one(".dg-reviews-stats")
+    if section is None:
+        return {}
+
+    text = section.get_text(" ", strip=True)
+    ratings: Dict[str, float] = {}
+    for aspect in ("Comida", "Servicio", "Ambiente"):
+        match = re.search(rf"{aspect}\s*([\d]+(?:[.,]\d+)?)", text)
+        if match:
+            value = _to_float(match.group(1))
+            if value is not None and 0 <= value <= 5:
+                ratings[aspect.lower()] = value
+    return ratings
+
+
+def extract_restaurant_links(soup: BeautifulSoup) -> Dict[str, str]:
+    """Map restaurant_id -> detail URL for every restaurant linked on a page."""
+    found: Dict[str, str] = {}
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if "/restaurante/" not in href or "reservar" in href or "agregar" in href:
+            continue
+        match = re.search(r"restaurante/[^_]+_(\d+)", href)
+        if not match:
+            continue
+        restaurant_id = match.group(1)
+        found.setdefault(restaurant_id, href if href.startswith("http") else BASE_URL + href)
+    return found
+
+
+def discover_restaurants(session: requests.Session, max_restaurants: int = 200,
+                         delay: float = 1.5, verbose: bool = True) -> Dict[str, str]:
+    """Discover restaurant detail URLs across several entry points.
+
+    /panama/search has no pagination, so breadth comes from combining the city
+    landing page with one search query per cuisine.
+    """
+    entry_points = [f"{BASE_URL}/panama", SEARCH_URL]
+    entry_points += [f"{SEARCH_URL}?q={q}" for q in CUISINE_QUERIES]
+
+    found: Dict[str, str] = {}
+    for url in entry_points:
+        if len(found) >= max_restaurants:
+            break
+        soup = get_page(session, url, delay)
+        if soup is None:
+            continue
+        before = len(found)
+        for rid, href in extract_restaurant_links(soup).items():
+            found.setdefault(rid, href)
+        if verbose:
+            print(f"  {url.replace(BASE_URL, ''):45s} -> {len(found):3d} restaurantes "
+                  f"(+{len(found) - before})")
+
+    return dict(list(found.items())[:max_restaurants])
 
 
 def get_restaurant_details(soup: BeautifulSoup, url: str, restaurant_id: str) -> Dict:
-    """Extract detailed information from restaurant page."""
-    details = {
-        'restaurant_id': restaurant_id,
-        'url': url
-    }
+    """Extract restaurant-level metadata from a detail page's microdata."""
+    details: Dict = {"restaurant_id": restaurant_id, "url": url}
 
-    # Name
-    name_elem = soup.find('h1')
-    if name_elem:
-        details['restaurant_name'] = name_elem.get_text(strip=True)
+    name_el = soup.find("h1")
+    if name_el:
+        details["restaurant_name"] = name_el.get_text(" ", strip=True)
 
-        # Overall rating
-    rating_elem = soup.select_one('.reviews-badge, .reviews-data-badge, [class*="rating"]')
-    if rating_elem:
-        text = rating_elem.get_text(strip=True)
-        # Clean text - remove extra spaces and normalize
-        text = ' '.join(text.split())
+    cuisine = _itemprop(soup, "servesCuisine")
+    details["category"] = cuisine if cuisine else None
 
-        # Extract rating - first number that is valid (1-5)
-        all_numbers = re.findall(r'[\d.]+', text)
-        for num_str in all_numbers:
-            try:
-                val = float(num_str)
-                if 1 <= val <= 5:
-                    details['overall_rating'] = val
-                    break
-            except ValueError:
-                continue
+    price = _itemprop(soup, "priceRange")
+    details["price_range"] = price if price else None
 
-        # Extract review count - look for K suffix (e.g., "1.8Kreseñas")
-        count_match = re.search(r'([\d.]+)\s*K\s*rese', text, re.IGNORECASE)
-        if count_match:
-            count_str = count_match.group(1)
-            try:
-                # Handle cases like "1.8" or "1"
-                if '.' in count_str:
-                    count_val = float(count_str)
-                else:
-                    count_val = float(count_str)
-                details['review_count'] = int(count_val * 1000)
-            except ValueError:
-                pass
+    # aggregateRating carries the restaurant's headline rating; the ratingValue
+    # inside it is the first one on the page.
+    agg = soup.select_one('[itemprop="aggregateRating"]')
+    if agg is not None:
+        details["overall_rating"] = _to_float(_itemprop(agg, "ratingValue"))
+        details["review_count"] = _to_float(_itemprop(agg, "reviewCount"))
 
-    # Aspect ratings (Comida, Servicio, Ambiente)
-    aspect_ratings = {}
-    ratings_section = soup.select_one('.dg-reviews-stats, .ratings-section, [class*="reviews-stats"]')
-    if ratings_section:
-        text = ratings_section.get_text(strip=True)
-        # Parse "Comida4.8/5Servicio4.6/5Ambiente4.4/5"
-        for match in re.finditer(r'(Comida|Servicio|Ambiente)\s*([\d.]+)', text):
-            aspect = match.group(1).lower()
-            rating = float(match.group(2))
-            aspect_ratings[aspect] = rating
+    # The site's own aspect scores, kept as reference values for the analysis.
+    aspects = extract_aspect_ratings(soup)
+    details["food_rating"] = aspects.get("comida")
+    details["service_rating"] = aspects.get("servicio")
+    details["ambiance_rating"] = aspects.get("ambiente")
 
-    if aspect_ratings:
-        details['aspect_ratings'] = aspect_ratings
-        if 'comida' in aspect_ratings:
-            details['food_rating'] = aspect_ratings['comida']
-        if 'servicio' in aspect_ratings:
-            details['service_rating'] = aspect_ratings['servicio']
-        if 'ambiente' in aspect_ratings:
-            details['ambiance_rating'] = aspect_ratings['ambiente']
-
-    # Category
-    category_elems = soup.select('.categories a, [class*="category"] a, .cuisine-tags a')
-    if category_elems:
-        categories = [a.get_text(strip=True) for a in category_elems if a.get_text(strip=True)]
-        if categories:
-            details['category'] = ' / '.join(categories)
+    # Address -> street plus a derived zone (e.g. "Bella Vista").
+    street = _itemprop(soup, "streetAddress") or _itemprop(soup, "address")
+    if street:
+        details["address"] = street
+        zone = _zone_from_address(street)
+        if not zone:
+            region = _itemprop(soup, "addressRegion")
+            zone = region.strip() if region else None
+        details["location"] = zone
     else:
-        # Try getting category from meta or other sources
-        category_elem = soup.select_one('[class*="category"], .tag')
-        if category_elem:
-            details['category'] = category_elem.get_text(strip=True)
-
-    # Location
-    location_elem = soup.select_one('.location, [class*="location"], .address, .zone')
-    if location_elem:
-        details['location'] = location_elem.get_text(strip=True)
-
-    # Price range
-    price_elem = soup.select_one('.price, [class*="price-range"], .price_level')
-    if price_elem:
-        price_text = price_elem.get_text(strip=True)
-        if '$' in price_text:
-            details['price_range'] = price_text
+        details["location"] = None
 
     return details
 
 
-def scrape_all(session, max_restaurants: int = 50, delay: float = 2.0) -> pd.DataFrame:
-    """Main orchestrator - scrape restaurant data."""
-    all_data = []
-
-    # First, get restaurant list from search page
-    print("Fetching restaurant list...")
-    soup = get_page(session, SEARCH_URL, delay)
-    if not soup:
-        print("Failed to fetch search page")
-        return pd.DataFrame()
-
-    restaurant_links = get_restaurant_links_from_search(soup)
-    print(f"Found {len(restaurant_links)} restaurant URLs")
-
-    # Scrape each restaurant
-    for i, rest in enumerate(restaurant_links[:max_restaurants]):
-        print(f"\n[{i+1}/{min(len(restaurant_links), max_restaurants)}] {rest['restaurant_id']}... ", end="", flush=True)
-
-        soup = get_page(session, rest['url'], delay)
-        if not soup:
-            print("FAILED")
-            continue
-
-        details = get_restaurant_details(soup, rest['url'], rest['restaurant_id'])
-        details['source'] = 'degusta'
-
-        print(f"OK - {details.get('restaurant_name', 'N/A')[:30]} | Rating: {details.get('overall_rating', 'N/A')}")
-
-        all_data.append(details)
-
-    # Convert to DataFrame
-    if all_data:
-        df = pd.DataFrame(all_data)
-        return df
-    else:
-        return pd.DataFrame()
-
-
-def save_to_csv(df: pd.DataFrame, path: str = "data/raw/degusta_restaurants.csv"):
-    """Save scraped data to CSV."""
-    if df.empty:
-        print("No data to save")
-        return
-
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False)
-    print(f"\nSaved {len(df)} restaurants to {path}")
-
-
 def get_reviews_from_page(soup: BeautifulSoup) -> List[Dict]:
-    """Extract individual reviews embedded in a restaurant page as schema.org
-    microdata (itemprop="review"). Degusta renders the most recent reviews
-    server-side, so these are real reviews retrievable without JavaScript.
+    """Extract the individual reviews embedded as schema.org microdata.
+
+    Each review carries its own author, rating and publication date, so reviews
+    are usable on their own rather than inheriting restaurant-level values.
     """
     reviews = []
-    for rev in soup.select('[itemprop="review"], .review'):
+    for rev in soup.select('[itemprop="review"]'):
         body = rev.select_one('[itemprop="reviewBody"]')
-        if not body:
+        if body is None:
             continue
         text = body.get_text(" ", strip=True)
         if len(text) < 10:
             continue
 
         author = rev.select_one('[itemprop="author"]')
-        rating = rev.select_one('[itemprop="ratingValue"]')
         date = rev.select_one('[itemprop="datePublished"]')
 
+        # The review's own score lives under its reviewRating subtree.
+        rating_el = rev.select_one('[itemprop="reviewRating"] [itemprop="ratingValue"]') \
+            or rev.select_one('[itemprop="ratingValue"]')
         rating_val = None
-        if rating is not None:
-            raw = rating.get("content") or rating.get_text(strip=True)
-            try:
-                rating_val = float(raw)
-            except (TypeError, ValueError):
-                rating_val = None
+        if rating_el is not None:
+            rating_val = _to_float(rating_el.get("content") or rating_el.get_text(strip=True))
 
         reviews.append({
             "review_text": text,
@@ -256,43 +262,38 @@ def get_reviews_from_page(soup: BeautifulSoup) -> List[Dict]:
     return reviews
 
 
-def scrape_reviews_all(session, max_restaurants: int = 50, delay: float = 2.0) -> pd.DataFrame:
-    """Scrape restaurant pages and return a flat DataFrame of individual reviews.
-
-    Each row carries the review text plus restaurant-level metadata so it can be
-    merged with other sources into data/raw/raw_reviews.csv.
-    """
-    print("Fetching restaurant list...")
-    soup = get_page(session, SEARCH_URL, delay)
-    if not soup:
-        print("Failed to fetch search page")
-        return pd.DataFrame()
-
-    restaurant_links = get_restaurant_links_from_search(soup)
-    print(f"Found {len(restaurant_links)} restaurant URLs")
+def scrape_reviews_all(session: requests.Session, max_restaurants: int = 200,
+                       delay: float = 1.5) -> pd.DataFrame:
+    """Scrape restaurant pages and return a flat DataFrame of individual reviews."""
+    print("Descubriendo restaurantes en Degusta...")
+    restaurants = discover_restaurants(session, max_restaurants, delay)
+    print(f"\n{len(restaurants)} restaurantes descubiertos. Extrayendo resenas...\n")
 
     rows = []
-    for i, rest in enumerate(restaurant_links[:max_restaurants]):
-        print(f"[{i+1}/{min(len(restaurant_links), max_restaurants)}] {rest['restaurant_id']}... ",
-              end="", flush=True)
+    for i, (rid, url) in enumerate(restaurants.items(), 1):
+        print(f"[{i}/{len(restaurants)}] {rid}... ", end="", flush=True)
 
-        page = get_page(session, rest["url"], delay)
-        if not page:
-            print("FAILED")
+        page = get_page(session, url, delay)
+        if page is None:
+            print("FALLO")
             continue
 
-        details = get_restaurant_details(page, rest["url"], rest["restaurant_id"])
+        details = get_restaurant_details(page, url, rid)
         reviews = get_reviews_from_page(page)
-        print(f"{details.get('restaurant_name', 'N/A')[:28]} -> {len(reviews)} reviews")
+        print(f"{str(details.get('restaurant_name'))[:30]:32s} -> {len(reviews)} resenas")
 
         for r in reviews:
             rows.append({
-                "restaurant_id": rest["restaurant_id"],
+                "restaurant_id": f"dg_{rid}",
                 "restaurant_name": details.get("restaurant_name"),
-                "category": details.get("category", "General"),
-                "location": details.get("location", "Panamá"),
+                "category": details.get("category"),
+                "location": details.get("location"),
+                "address": details.get("address"),
                 "price_range": details.get("price_range"),
+                # Restaurant-level rating, plus this review's own rating.
                 "overall_rating": details.get("overall_rating"),
+                "review_rating": r["review_rating"],
+                # Degusta's own aspect scores for the restaurant (0-5).
                 "food_rating": details.get("food_rating"),
                 "service_rating": details.get("service_rating"),
                 "ambiance_rating": details.get("ambiance_rating"),
@@ -305,31 +306,24 @@ def scrape_reviews_all(session, max_restaurants: int = 50, delay: float = 2.0) -
     return pd.DataFrame(rows)
 
 
-def scrape_reviews_main():
-    """Scrape real Degusta reviews and save them to data/raw/degusta_reviews.csv."""
+def scrape_reviews_main(max_restaurants: int = 200, delay: float = 1.5) -> pd.DataFrame:
+    """Scrape real Degusta reviews into data/raw/degusta_reviews.csv."""
     session = get_session()
-    df = scrape_reviews_all(session, max_restaurants=50, delay=2.0)
+    df = scrape_reviews_all(session, max_restaurants=max_restaurants, delay=delay)
     if df.empty:
-        print("No reviews scraped")
+        print("No se extrajo ninguna resena")
         return df
+
     Path("data/raw").mkdir(parents=True, exist_ok=True)
     df.to_csv("data/raw/degusta_reviews.csv", index=False)
-    print(f"\nSaved {len(df)} reviews from {df['restaurant_id'].nunique()} restaurants "
-          f"to data/raw/degusta_reviews.csv")
+    print(f"\nGuardadas {len(df)} resenas de {df['restaurant_id'].nunique()} restaurantes "
+          f"en data/raw/degusta_reviews.csv")
+    print(f"  con categoria: {df['category'].notna().sum()}/{len(df)}")
+    print(f"  con precio:    {df['price_range'].notna().sum()}/{len(df)}")
+    print(f"  con zona:      {df['location'].notna().sum()}/{len(df)}")
+    print(f"  con rating:    {df['review_rating'].notna().sum()}/{len(df)}")
     return df
 
 
-def scrape_restaurants_main():
-    """Scrape restaurant metadata only -> data/raw/degusta_restaurants.csv."""
-    session = get_session()
-    df = scrape_all(session, max_restaurants=50, delay=2.0)
-    save_to_csv(df)
-
-    if not df.empty:
-        print("\nSample data:")
-        print(df[['restaurant_name', 'overall_rating', 'category']].head())
-
-
 if __name__ == "__main__":
-    # Reviews are the pipeline deliverable; scrape them by default.
     scrape_reviews_main()
