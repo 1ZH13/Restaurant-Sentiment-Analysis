@@ -80,10 +80,10 @@ Archivos de datos principales:
 
 El proyecto documenta:
 
-- 997 resenas reales.
-- 207 restaurantes.
+- 1108 resenas reales.
+- 241 restaurantes.
 - 2 fuentes de datos.
-- 99 categorias de cocina.
+- 121 categorias de cocina.
 - 32 zonas de Ciudad de Panama.
 
 ## 5. Que es web scraping
@@ -469,11 +469,11 @@ No. El scraping es parte de la ingesta de datos. El dashboard usa archivos ya pr
 
 ### 10. Cuantas resenas tiene el dataset?
 
-997 resenas reales: 973 de Degusta y 24 de RestaurantGuru.
+1108 resenas reales: 973 de Degusta y 135 de RestaurantGuru.
 
 ### 11. Cuantos restaurantes analiza?
 
-207 restaurantes de Ciudad de Panama.
+241 restaurantes de Ciudad de Panama.
 
 ### 12. Por que Degusta aporta muchas mas resenas que RestaurantGuru?
 

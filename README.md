@@ -37,7 +37,7 @@ dos fuentes, las analiza por aspecto y permite **comparar restaurantes, descubri
 grupos similares (clusters) y recibir recomendaciones** según las preferencias del
 usuario.
 
-**Datos actuales:** 997 reseñas reales · 207 restaurantes · 99 categorías de
+**Datos actuales:** 1108 reseñas reales · 241 restaurantes · 121 categorías de
 cocina · 32 zonas de la ciudad · 2 fuentes.
 
 | Campo | Cobertura |
@@ -45,9 +45,9 @@ cocina · 32 zonas de la ciudad · 2 fuentes.
 | Rango de precio | 100% |
 | Zona | 100% |
 | Calificación del restaurante | 100% |
-| Categoría de cocina | 99% |
-| Calificación propia de la reseña | 98% |
-| Fecha de la reseña | 98% |
+| Categoría de cocina | 97% |
+| Fecha de la reseña | 90% |
+| Calificación propia de la reseña | 88% |
 
 Las fechas van de 2019 a 2026. Para regenerar estas cifras: `python run_pipeline.py`.
 
@@ -127,7 +127,11 @@ Dos fuentes **reales e independientes** de reseñas de restaurantes en Ciudad de
 | Fuente | URL | Método | Reseñas |
 |--------|-----|--------|---------|
 | **Degusta Panamá** | https://www.degustapanama.com/ | Microdatos `schema.org` (`itemprop`) con `requests` + `BeautifulSoup` | 973 |
-| **RestaurantGuru** | https://restaurantguru.com/Panama-City | Reseñas agregadas (principalmente de Google), vía JSON-LD | 24 |
+| **RestaurantGuru** | https://restaurantguru.com/Panama-City | Reseñas agregadas (principalmente de Google), vía JSON-LD | 135 |
+
+Tres restaurantes aparecían en ambas fuentes con nombres ligeramente distintos
+(p. ej. *"El Trapiche (Bella Vista)"* y *"Restaurante El Trapiche Bella Vista"*)
+y se unificaron en un solo registro.
 
 ### Cómo se consiguió el volumen
 

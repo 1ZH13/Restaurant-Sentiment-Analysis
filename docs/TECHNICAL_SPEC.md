@@ -42,11 +42,14 @@ The project performs the following operations:
 ### 3.3 Current dataset size
 Verified project data currently contains:
 - 973 reviews from Degusta,
-- 24 reviews from RestaurantGuru,
-- 997 unified reviews across 207 restaurants in the processed dataset.
+- 135 reviews from RestaurantGuru,
+- 1108 unified reviews across 241 restaurants in the processed dataset.
 
-Field coverage: price range 100%, zone 100%, restaurant rating 100%, cuisine 99%,
-per-review rating 98%, review date 98%. Review dates span 2019 to 2026.
+Field coverage: price range 100%, zone 100%, restaurant rating 100%, cuisine 97%,
+review date 90%, per-review rating 88%. Review dates span 2019 to 2026.
+
+Three restaurants were listed by both sources under slightly different names and
+were merged into a single record by the unification step.
 
 ### 3.4 Identity and deduplication
 Restaurants are identified by a canonical id derived from the normalised
