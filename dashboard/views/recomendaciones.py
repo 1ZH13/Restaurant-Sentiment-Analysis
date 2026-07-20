@@ -1,127 +1,149 @@
 """
-Recommendations Page - Restaurant recommendation system - Enhanced UX/UI
+Recommendations Page - Restaurant recommendation system.
+
+The price selector used to offer labels ("$$ - $$$") that do not exist in the
+data, so the budget preference never matched anything. Options are now built
+from the dataset itself, which also means they stay correct if the sources
+change their vocabulary.
 """
 
-import streamlit as st
 import pandas as pd
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import streamlit as st
 
 try:
-    from src.recommendation.recommender import RestaurantRecommender, RecommendationResult
-except ImportError:
+    from src.recommendation.recommender import RestaurantRecommender
+except ImportError:  # pragma: no cover - surfaced in the UI below
     RestaurantRecommender = None
+
+ANY = "Cualquiera"
+
+ASPECT_CHOICES = {
+    "comida": "Calidad de la comida",
+    "servicio": "Servicio",
+    "precio": "Precio",
+    "ambiente": "Ambiente",
+}
+
+
+def _options(df: pd.DataFrame, column: str) -> list:
+    if column not in df.columns:
+        return []
+    values = df[column].dropna().astype(str)
+    values = values[values.str.lower() != "nan"]
+    return sorted(values.unique().tolist())
 
 
 def render(df: pd.DataFrame):
-    """Render the Recommendations page with enhanced UI."""
+    """Render the Recommendations page."""
 
     st.markdown("### Encuentra tu restaurante ideal")
 
     if RestaurantRecommender is None:
-        st.error("El módulo de recomendaciones no está disponible. Revisa la instalación.")
+        st.error("El modulo de recomendaciones no esta disponible. Revisa la instalacion.")
         return
 
-    # Introduction card
     st.markdown("""
     <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-        <p style="margin: 0; color: #A0AEC0;">Cuéntanos tus preferencias y encontraremos los mejores restaurantes para ti según el análisis de sentimiento y los patrones de agrupamiento.</p>
+        <p style="margin: 0; color: #A0AEC0;">Contanos que buscas y combinamos tus preferencias
+        con el analisis de sentimiento de las resenas para ordenar los restaurantes.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Preference inputs
-    st.markdown("#### ¿Qué estás buscando?")
+    category_col = "category_primary" if "category_primary" in df.columns else "category"
+    price_col = "price_range"
 
     col1, col2 = st.columns(2)
-
     with col1:
-        categories = ["Cualquiera"] + df["category"].dropna().unique().tolist()
-        selected_category = st.selectbox("Tipo de cocina", categories)
-
+        selected_category = st.selectbox("Tipo de cocina", [ANY] + _options(df, category_col),
+                                         key="rec_category")
     with col2:
-        price_ranges = ["Cualquiera", "$", "$$ - $$$", "$$$ - $$$$", "$$$$"]
-        selected_price = st.selectbox("Rango de precio", price_ranges)
+        # Sort price options by their real ordinal level, not alphabetically.
+        price_options = _options(df, price_col)
+        if "price_level" in df.columns:
+            levels = (df.dropna(subset=[price_col])
+                        .groupby(df[price_col].astype(str))["price_level"].min()
+                        .sort_values())
+            price_options = [p for p in levels.index if p in price_options]
+        selected_price = st.selectbox("Presupuesto maximo", [ANY] + price_options,
+                                      key="rec_price")
 
-    # Priority aspects
-    st.markdown("#### ¿Qué es lo más importante para ti? (selecciona hasta 2)")
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    priority_aspects = []
-    with col1:
-        if st.checkbox("Calidad de la comida", value=True):
-            priority_aspects.append("comida")
-    with col2:
-        if st.checkbox("Servicio", value=True):
-            priority_aspects.append("servicio")
+    col3, col4 = st.columns(2)
     with col3:
-        if st.checkbox("Precio", value=False):
-            priority_aspects.append("precio")
+        selected_zone = st.selectbox("Zona", [ANY] + _options(df, "location"), key="rec_zone")
     with col4:
-        if st.checkbox("Ambiente", value=False):
-            priority_aspects.append("ambiente")
+        min_rating = st.slider("Calificacion minima", 0.0, 5.0, 4.0, 0.1, key="rec_rating")
 
-    # Location
-    if "location" in df.columns:
-        locations = ["Cualquiera"] + df["location"].dropna().unique().tolist()
-        selected_location = st.selectbox("Zona (opcional)", locations)
-    else:
-        selected_location = "Cualquiera"
+    st.markdown("#### Que es lo mas importante para vos?")
+    aspect_cols = st.columns(len(ASPECT_CHOICES))
+    priority_aspects = []
+    defaults = {"comida": True, "servicio": True, "precio": False, "ambiente": False}
+    for col, (aspect, label) in zip(aspect_cols, ASPECT_CHOICES.items()):
+        with col:
+            if st.checkbox(label, value=defaults[aspect], key=f"rec_aspect_{aspect}"):
+                priority_aspects.append(aspect)
 
     st.markdown("---")
 
-    # Generate recommendations
-    if st.button("Obtener recomendaciones personalizadas", type="primary", use_container_width=True):
-
-        preferences = {
-            "category": None if selected_category == "Cualquiera" else selected_category,
-            "max_price": None if selected_price == "Cualquiera" else selected_price,
-            "priority_aspects": priority_aspects,
-            "location": None if selected_location == "Cualquiera" else selected_location
-        }
-
-        with st.spinner("Analizando restaurantes..."):
-            recommender = RestaurantRecommender(df)
-            recommendations = recommender.recommend(preferences, top_n=5)
-
-        if recommendations:
-            st.markdown("### Tus mejores recomendaciones")
-
-            for i, rec in enumerate(recommendations, 1):
-                match_color = "#28a745" if rec.match_score >= 80 else "#ffc107" if rec.match_score >= 60 else "#dc3545"
-
-                st.markdown(f"""
-                <div style="background-color: #1E2530; padding: 20px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid {match_color};">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0; color: #FAFAFA;">#{i} {rec.restaurant_name}</h3>
-                        <div style="background-color: {match_color}33; padding: 8px 16px; border-radius: 8px;">
-                            <span style="color: {match_color}; font-weight: bold;">{rec.match_score:.0f}% coincidencia</span>
-                        </div>
-                    </div>
-                    <div style="margin-top: 12px; color: #A0AEC0;">
-                        <span style="margin-right: 16px;">{rec.category}</span>
-                        <span style="margin-right: 16px;">{rec.price_range}</span>
-                        <span>{rec.overall_rating:.1f}/5.0</span>
-                    </div>
-                    <div style="margin-top: 12px; padding: 12px; background-color: rgba(0,0,0,0.3); border-radius: 8px;">
-                        <p style="margin: 0; color: #28a745; font-style: italic;">{rec.explanation}</p>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning("No se encontraron recomendaciones. Prueba ajustando tus preferencias.")
-    else:
-        # Default recommendation display when no interaction
+    if not st.button("Obtener recomendaciones", type="primary", width="stretch"):
         st.markdown("""
-        <div style="background-color: rgba(78, 205, 196, 0.1); padding: 24px; border-radius: 12px; text-align: center; border: 1px dashed #4ECDC4;">
+        <div style="background-color: rgba(78, 205, 196, 0.1); padding: 24px; border-radius: 12px;
+                    text-align: center; border: 1px dashed #4ECDC4;">
             <h4 style="color: #4ECDC4; margin: 0;">Listo para ayudarte</h4>
-            <p style="color: #A0AEC0; margin-top: 12px;">Selecciona tus preferencias y presiona el botón para obtener recomendaciones personalizadas.</p>
+            <p style="color: #A0AEC0; margin-top: 12px;">Elegi tus preferencias y presiona el boton.</p>
         </div>
         """, unsafe_allow_html=True)
+        return
 
+    # Rating is a hard filter; the rest are scored preferences.
+    candidates = df
+    if min_rating > 0 and "overall_rating" in df.columns:
+        candidates = candidates[candidates["overall_rating"] >= min_rating]
 
-if __name__ == "__main__":
-    df = pd.read_csv("data/processed/restaurants_clustered.csv")
-    render(df)
+    if candidates.empty:
+        st.warning(f"Ningun restaurante alcanza una calificacion de {min_rating:.1f}. "
+                   "Proba bajando el minimo.")
+        return
+
+    preferences = {
+        "category": None if selected_category == ANY else selected_category,
+        "max_price": None if selected_price == ANY else selected_price,
+        "priority_aspects": priority_aspects,
+        "location": None if selected_zone == ANY else selected_zone,
+    }
+
+    with st.spinner("Analizando restaurantes..."):
+        recommender = RestaurantRecommender(candidates)
+        recommendations = recommender.recommend(preferences, top_n=5)
+
+    if not recommendations:
+        st.warning("No se encontraron recomendaciones. Proba ajustando tus preferencias.")
+        return
+
+    st.markdown("### Tus mejores recomendaciones")
+    st.caption(f"Evaluamos {candidates['restaurant_id'].nunique()} restaurantes que cumplen "
+               f"la calificacion minima de {min_rating:.1f}.")
+
+    for i, rec in enumerate(recommendations, 1):
+        color = "#28a745" if rec.match_score >= 80 else "#ffc107" if rec.match_score >= 60 else "#dc3545"
+        rating = f"{rec.overall_rating:.1f}/5.0" if rec.overall_rating else "sin calificacion"
+        details = [d for d in (rec.category, rec.price_range) if d and d.lower() != "nan"]
+
+        st.markdown(f"""
+        <div style="background-color: #1E2530; padding: 20px; border-radius: 12px;
+                    margin-bottom: 16px; border-left: 4px solid {color};">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #FAFAFA;">#{i} {rec.restaurant_name}</h3>
+                <div style="background-color: {color}33; padding: 8px 16px; border-radius: 8px;">
+                    <span style="color: {color}; font-weight: bold;">
+                        {rec.match_score:.0f}% coincidencia</span>
+                </div>
+            </div>
+            <div style="margin-top: 12px; color: #A0AEC0;">
+                {" · ".join(details + [rating])}
+            </div>
+            <div style="margin-top: 12px; padding: 12px; background-color: rgba(0,0,0,0.3);
+                        border-radius: 8px;">
+                <p style="margin: 0; color: #28a745; font-style: italic;">{rec.explanation}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)

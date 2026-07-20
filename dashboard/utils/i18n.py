@@ -149,9 +149,16 @@ def translate_dashboard_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     display_df = df.copy()
     if "review_text" in display_df.columns:
         display_df["review_text"] = display_df["review_text"].map(translate_review_text)
-    for col in display_df.select_dtypes(include="object").columns:
-        if col != "review_text":
-            display_df[col] = translate_series(display_df[col])
+    # Text columns are detected per column rather than with select_dtypes:
+    # pandas 3 stores text in a dedicated "str" dtype (and warns when it is
+    # matched via "object"), while pandas 2 rejects "str" outright with a
+    # TypeError. is_string_dtype covers both without version checks.
+    for col in display_df.columns:
+        if col == "review_text":
+            continue
+        series = display_df[col]
+        if pd.api.types.is_object_dtype(series) or pd.api.types.is_string_dtype(series):
+            display_df[col] = translate_series(series)
     return display_df
 
 

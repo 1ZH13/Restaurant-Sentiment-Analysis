@@ -8,6 +8,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
+from dashboard.utils.aspects import ASPECT_LABELS, mention_mask
+
 
 def _hex_to_rgba(hex_color: str, alpha: float = 0.2) -> str:
     """Convert a #RRGGBB hex string to an rgba() string with the given alpha."""
@@ -28,11 +30,32 @@ def render(df: pd.DataFrame):
         "price_range": "first"
     }).reset_index()
 
+    # Narrow the (long) selector list before choosing.
+    query = st.text_input("Buscar restaurante", key="comparar_search",
+                          placeholder="Escribe parte del nombre o la cocina...")
+    if query.strip():
+        needle = query.strip().lower()
+        haystack = (restaurants["restaurant_name"].fillna("").astype(str).str.lower() + " "
+                    + restaurants["category"].fillna("").astype(str).str.lower())
+        restaurants = restaurants[haystack.str.contains(needle, regex=False)]
+
+    if restaurants.empty:
+        st.warning("Ningun restaurante coincide con esa busqueda.")
+        return
+
+    lookup = restaurants.set_index("restaurant_id")
+
+    def _format(rid):
+        row = lookup.loc[rid]
+        # Restaurants without a rating must not render as "nan".
+        rating = f"{row['overall_rating']:.1f}" if pd.notna(row["overall_rating"]) else "s/c"
+        return f"{rating} - {row['restaurant_name']}"
+
     # Restaurant selector with better UI
     selected_restaurants = st.multiselect(
         "Elige restaurantes para comparar (2-5):",
-        options=restaurants["restaurant_id"].unique(),
-        format_func=lambda x: f"{restaurants[restaurants['restaurant_id'] == x]['overall_rating'].values[0]:.1f} - {restaurants[restaurants['restaurant_id'] == x]['restaurant_name'].values[0]}",
+        options=restaurants["restaurant_id"].tolist(),
+        format_func=_format,
         max_selections=5,
         placeholder="Selecciona restaurantes"
     )
@@ -53,7 +76,7 @@ def render(df: pd.DataFrame):
 
     st.dataframe(
         info_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={"Calificación": st.column_config.NumberColumn(format="%.2f ")}
     )
@@ -96,7 +119,7 @@ def render(df: pd.DataFrame):
             yaxis=dict(range=[0, 5.5]),
             yaxis_title="Calificación"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         st.markdown("##### Calificación por aspecto (radar)")
@@ -106,8 +129,19 @@ def render(df: pd.DataFrame):
         available_cols = [col for col in sentiment_cols if col in compare_df.columns]
 
         if available_cols:
-            radar_data = compare_df.groupby("restaurant_id")[available_cols].mean().reset_index()
-            radar_data = radar_data.merge(
+            # Average only the reviews that mention each aspect, so a restaurant
+            # nobody discussed the price of does not look "neutral on price".
+            radar_rows = []
+            for rid, group in compare_df.groupby("restaurant_id"):
+                row = {"restaurant_id": rid}
+                for col in available_cols:
+                    aspect = col.replace("sentiment_", "").replace("_score", "")
+                    mask = mention_mask(group, aspect)
+                    values = group.loc[mask, col].dropna()
+                    row[col] = float(values.mean()) if len(values) else 0.0
+                radar_rows.append(row)
+
+            radar_data = pd.DataFrame(radar_rows).merge(
                 restaurants[["restaurant_id", "restaurant_name"]],
                 on="restaurant_id"
             )
@@ -144,7 +178,7 @@ def render(df: pd.DataFrame):
                 font=dict(color='#FAFAFA'),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.4)
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No hay datos de sentimiento disponibles para el gráfico de radar.")
 
@@ -177,7 +211,7 @@ def render(df: pd.DataFrame):
         font=dict(color='#FAFAFA'),
         yaxis_title="Número de reseñas"
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Sample reviews
     st.markdown("---")
