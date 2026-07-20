@@ -20,11 +20,56 @@ except ImportError:
     TEXTBLOB_AVAILABLE = False
 
 
+# Aspect vocabularies. These were originally very small, which meant most
+# reviews never triggered the precio/servicio/ambiente aspects at all and the
+# dataset came out ~87% neutral for them. The lists below cover the words that
+# actually show up in Panamanian restaurant reviews, in Spanish and English.
 ASPECT_KEYWORDS = {
-    "comida": ["comida", "food", "plato", "platillo", "dish", "sabor", "sabores", "menu", "cocina", "chef", "carnes", "pescado", "ensalada", "sopa", "postre"],
-    "servicio": ["servicio", "service", "atencion", "mesero", "mesera", "camarero", "camarera", "mozo", "personal", "empleados", "staff"],
-    "precio": ["precio", "price", "cost", "caro", "expensive", "barato", "cheap", "vale", "worth", "dinero", "bill", "cuenta", "pagar"],
-    "ambiente": ["ambiente", "ambiance", "ambience", "ambiente", "ambiente", "decoracion", "decoration", "lugar", "place", "espacio", "vista", "music", "musica", "ruido", "noise"]
+    "comida": [
+        "comida", "comidas", "food", "plato", "platos", "platillo", "platillos",
+        "dish", "dishes", "sabor", "sabores", "sabroso", "menu", "menú", "cocina",
+        "chef", "carne", "carnes", "pescado", "mariscos", "camarones", "pollo",
+        "ensalada", "sopa", "postre", "postres", "pasta", "pizza", "sushi",
+        "hamburguesa", "arroz", "pan", "queso", "salsa", "entrada", "entradas",
+        "porcion", "porción", "porciones", "ingredientes", "fresco", "frescos",
+        "cocinado", "cocida", "punto", "sazon", "sazón", "desayuno", "almuerzo",
+        "cena", "bebida", "bebidas", "cafe", "café", "coctel", "cóctel", "trago",
+        "vino", "cerveza", "delicioso", "deliciosa", "rico", "rica",
+        "taste", "flavor", "meal", "dessert", "starter", "portion", "cooked",
+    ],
+    "servicio": [
+        "servicio", "service", "atencion", "atención", "atendieron", "atendio",
+        "atendió", "atendida", "atendido", "mesero", "meseros", "mesera", "meseras",
+        "camarero", "camarera", "mozo", "personal", "empleado", "empleados",
+        "staff", "waiter", "waitress", "trato", "amabilidad", "amable", "amables",
+        "espera", "esperamos", "esperar", "demora", "demoro", "demoró", "tardaron",
+        "rapidez", "atento", "atenta", "atentos", "anfitrion", "anfitrión",
+        "reserva", "reservacion", "reservación", "pedido", "orden", "cortesia",
+        "cortesía", "profesional", "hostess", "bartender",
+    ],
+    "precio": [
+        "precio", "precios", "price", "prices", "pricing", "cost", "costo",
+        "caro", "cara", "caros", "caras", "expensive", "barato", "barata",
+        "baratos", "cheap", "economico", "económico", "economica", "económica",
+        "vale", "valen", "worth", "dinero", "money", "bill", "cuenta", "pagar",
+        "pague", "pagamos", "cobran", "cobro", "cobraron", "tarifa", "factura",
+        "relacion calidad", "relación calidad", "calidad precio", "value",
+        "accesible", "asequible", "presupuesto", "afordable", "affordable",
+        "promocion", "promoción", "descuento", "oferta", "costoso", "costosa",
+        "dolares", "dólares", "balboas",
+    ],
+    "ambiente": [
+        "ambiente", "ambiance", "ambience", "atmosfera", "atmósfera", "atmosphere",
+        "decoracion", "decoración", "decoration", "decor", "lugar", "place",
+        "espacio", "vista", "vistas", "view", "musica", "música", "music",
+        "ruido", "ruidoso", "noise", "noisy", "acogedor", "acogedora", "cozy",
+        "iluminacion", "iluminación", "luz", "terraza", "rooftop", "jardin",
+        "jardín", "mesa", "mesas", "silla", "sillas", "local", "instalaciones",
+        "bano", "baño", "banos", "baños", "limpieza", "limpio", "limpia",
+        "sucio", "sucia", "aire acondicionado", "climatizado", "romantico",
+        "romántico", "familiar", "tranquilo", "tranquila", "concurrido", "lleno",
+        "decorado", "moderno", "moderna", "elegante", "rustico", "rústico",
+    ],
 }
 
 
@@ -155,12 +200,25 @@ POSITIVE_LEXICON = {
     "sabroso", "sabrosa", "agradable", "rapido", "rápido", "rapida", "rápida", "generoso",
     "generosa", "bonito", "bonita", "lindo", "linda", "divino", "divina", "super", "súper",
     "genial", "fabuloso", "exquisito", "exquisita", "mejor", "mejores", "favorito",
-    "favorita", "calidad", "gusto", "gusto", "gusta", "gustó", "encantador", "rica",
-    "wow", "top", "spicy", "supero", "superó",
+    "favorita", "calidad", "gusto", "gusta", "gustó", "encantador", "encantadora",
+    "wow", "top", "supero", "superó",
+    # Spanish - service, atmosphere and value vocabulary
+    "acogedor", "acogedora", "atenta", "cordial", "cordiales", "profesional",
+    "eficiente", "eficientes", "puntual", "limpio", "limpia", "impecable",
+    "tranquilo", "tranquila", "comodo", "cómodo", "comoda", "cómoda", "elegante",
+    "moderno", "moderna", "romantico", "romántico", "espectacular", "hermoso",
+    "hermosa", "abundante", "abundantes", "generosas", "jugoso", "jugosa",
+    "crujiente", "tierno", "tierna", "autentico", "auténtico", "casero", "casera",
+    "economico", "económico", "economica", "económica", "accesible", "asequible",
+    "justo", "justa", "razonable", "razonables", "conveniente", "volveria",
+    "volvería", "volveremos", "repetire", "repetiré", "vale", "valio", "valió",
+    "buenisima", "buenísima", "sorprendio", "sorprendió", "sorprendente",
     # English
     "excellent", "delicious", "great", "amazing", "good", "best", "friendly", "wonderful",
     "perfect", "awesome", "tasty", "nice", "fantastic", "love", "loved", "recommend",
-    "recommended", "fresh", "gorgeous", "polite", "balanced",
+    "recommended", "fresh", "gorgeous", "polite", "balanced", "cozy", "attentive",
+    "affordable", "reasonable", "clean", "beautiful", "outstanding", "superb",
+    "flavorful", "generous", "welcoming", "charming", "solid", "worth",
 }
 
 NEGATIVE_LEXICON = {
@@ -170,16 +228,42 @@ NEGATIVE_LEXICON = {
     "caros", "caras", "demora", "demoro", "demoró", "tardo", "tardó", "sucio", "sucia",
     "grosero", "grosera", "descortes", "descortés", "decepcion", "decepción", "decepcionado",
     "decepcionada", "decepcionante", "horrible", "mediocre", "desabrido", "salado", "quemado",
-    "incomodo", "incómodo", "ruidoso", "falta", "faltan", "falto", "faltó", "peor", "peores",
-    "regular", "asco", "defraudo", "defraudó", "defrauda", "fome", "aceptable",
+    "incomodo", "incómodo", "incomoda", "incómoda", "ruidoso", "ruidosa",
+    "falta", "faltan", "falto", "faltó", "peor", "peores",
+    "regular", "asco", "defraudo", "defraudó", "defrauda", "fome",
+    # Spanish - service, atmosphere and value complaints
+    "elevado", "elevada", "elevados", "elevadas", "exagerado", "exagerada",
+    "carisimo", "carísimo", "carisima", "carísima", "sobrevalorado", "sobrevalorada",
+    "costoso", "costosa", "abusivo", "abusiva", "escaso", "escasa", "escasas",
+    "pequena", "pequeña", "insuficiente", "tibio", "tibia", "seco", "seca",
+    "duro", "dura", "insipido", "insípido", "insipida", "insípida", "aguado",
+    "aguada", "grasoso", "grasosa", "quemada", "crudo", "cruda", "descuidado",
+    "descuidada", "desatento", "desatenta", "antipatico", "antipático",
+    "antipatica", "antipática", "tardaron", "olvidaron", "olvido",
+    "olvidó", "error", "errores", "equivocaron", "reclamo", "queja",
+    "evitar", "eviten", "lamentable", "penoso", "penosa", "desagradable",
+    "estrecho", "estrecha", "apretado", "apretada", "desorganizado",
     # English
     "bad", "terrible", "awful", "slow", "cold", "expensive", "overpriced", "disappointing",
     "disappointed", "worst", "rude", "dirty", "bland", "horrible", "mediocre",
+    "tasteless", "soggy", "burnt", "undercooked", "cramped", "noisy", "unfriendly",
+    "pricey", "avoid", "waited", "forgot", "wrong",
 }
+
+# Words that amplify the polarity of a nearby sentiment word.
+INTENSIFIERS = {"muy", "super", "súper", "bastante", "tan", "demasiado", "sumamente",
+                "realmente", "totalmente", "completamente", "extremadamente",
+                "very", "really", "extremely", "so", "absolutely", "incredibly"}
 
 NEGATORS = {"no", "nunca", "sin", "tampoco", "ni", "jamas", "jamás", "nada"}
 
 _TOKEN_RE = re.compile(r"[a-záéíóúñü]+", re.IGNORECASE)
+
+# How many tokens around an aspect mention are attributed to that aspect.
+# Spanish puts the adjective after the noun ("comida deliciosa"), so the window
+# reaches further forward than back.
+WINDOW_BEFORE = 3
+WINDOW_AFTER = 6
 
 
 class SpanishLexiconAnalyzer:
@@ -194,16 +278,22 @@ class SpanishLexiconAnalyzer:
     def __init__(self):
         self.vader = VADERSentimentAnalyzer() if VADER_AVAILABLE else None
 
-    def _lexicon_score(self, text: str) -> int:
+    def _lexicon_score(self, text: str) -> float:
+        """Score text by summing lexicon hits, honouring negation and intensity."""
         tokens = _TOKEN_RE.findall(text.lower())
-        score = 0
+        score = 0.0
         for i, tok in enumerate(tokens):
-            polarity = 1 if tok in POSITIVE_LEXICON else (-1 if tok in NEGATIVE_LEXICON else 0)
-            if polarity == 0:
+            polarity = 1.0 if tok in POSITIVE_LEXICON else (-1.0 if tok in NEGATIVE_LEXICON else 0.0)
+            if polarity == 0.0:
                 continue
+
             window = tokens[max(0, i - 3):i]
             if any(n in window for n in NEGATORS):
                 polarity = -polarity
+            # "muy bueno" counts for more than "bueno".
+            if any(n in window[-2:] for n in INTENSIFIERS):
+                polarity *= 1.5
+
             score += polarity
         return score
 
@@ -221,23 +311,126 @@ class SpanishLexiconAnalyzer:
             return "negative"
         return "neutral"
 
-    def get_aspect_sentiment(self, text: str) -> Dict[str, str]:
-        result = {"comida": "neutral", "servicio": "neutral", "precio": "neutral", "ambiente": "neutral"}
+    def _token_polarity(self, tokens: List[str], index: int) -> float:
+        """Polarity of one token, adjusted for negation and intensifiers."""
+        token = tokens[index]
+        polarity = 1.0 if token in POSITIVE_LEXICON else (-1.0 if token in NEGATIVE_LEXICON else 0.0)
+        if polarity == 0.0:
+            return 0.0
+
+        window = tokens[max(0, index - 3):index]
+        if any(n in window for n in NEGATORS):
+            polarity = -polarity
+        if any(n in window[-2:] for n in INTENSIFIERS):
+            polarity *= 1.5
+        return polarity
+
+    def _nearest_aspect(self, index: int, aspect_positions: Dict[int, str]) -> Optional[str]:
+        """Attribute a sentiment word to the closest aspect mention.
+
+        Fixed windows around each aspect overlap: in "el servicio fue impecable
+        aunque la comida estuvo insipida", "impecable" falls inside comida's
+        window too and cancels its negative. Assigning each word to exactly one
+        aspect - the nearest - keeps the two opinions apart.
+
+        Spanish places the adjective after the noun ("comida deliciosa"), so a
+        word that follows a mention is treated as slightly closer than one at
+        the same distance before it.
+        """
+        best_aspect, best_distance = None, float("inf")
+
+        for position, aspect in aspect_positions.items():
+            if position == index:
+                continue
+            offset = index - position
+            if 0 < offset <= WINDOW_AFTER:
+                distance = float(offset)
+            elif -WINDOW_BEFORE <= offset < 0:
+                distance = -offset + 0.5
+            else:
+                continue
+
+            if distance < best_distance:
+                best_aspect, best_distance = aspect, distance
+
+        return best_aspect
+
+    def _label_from_score(self, score: float) -> str:
+        if score > 0:
+            return "positive"
+        if score < 0:
+            return "negative"
+        return "neutral"
+
+    def get_aspect_details(self, text: str) -> Dict[str, Dict]:
+        """Classify each aspect and report whether the review actually discussed it.
+
+        Distinguishing "not mentioned" from "mentioned but neutral" matters: a
+        review that never talks about price is not evidence that the price is
+        average. Callers that average these scores should use ``mentioned`` to
+        avoid diluting the result with silence.
+        """
+        details = {
+            aspect: {"label": "neutral", "mentioned": False}
+            for aspect in ASPECT_KEYWORDS
+        }
         if not text or pd.isna(text):
-            return result
+            return details
 
         text = str(text)
-        sentences = re.split(r"[.!?\n]", text)
+        lowered = text.lower()
+        tokens = _TOKEN_RE.findall(lowered)
+
+        # Map every aspect mention's token position to its aspect.
+        aspect_positions: Dict[int, str] = {}
+        mentioned_aspects = set()
 
         for aspect, keywords in ASPECT_KEYWORDS.items():
-            matched = [s for s in sentences if any(k in s.lower() for k in keywords)]
-            if matched:
-                result[aspect] = self._classify_text(" ".join(matched))
-            elif aspect == "comida":
-                # Food is the central topic: use the whole review if not named.
-                result[aspect] = self._classify_text(text)
+            single = {k for k in keywords if " " not in k}
+            phrases = [k for k in keywords if " " in k]
 
-        return result
+            positions = [i for i, tok in enumerate(tokens) if tok in single]
+            # Multi-word cues ("relacion calidad") are anchored on their first token.
+            for phrase in phrases:
+                if phrase in lowered:
+                    head = phrase.split()[0]
+                    positions.extend(i for i, tok in enumerate(tokens) if tok == head)
+
+            if positions:
+                mentioned_aspects.add(aspect)
+                for position in positions:
+                    aspect_positions.setdefault(position, aspect)
+
+        # Each sentiment word contributes to exactly one aspect: the nearest.
+        scores = {aspect: 0.0 for aspect in ASPECT_KEYWORDS}
+        for index in range(len(tokens)):
+            polarity = self._token_polarity(tokens, index)
+            if polarity == 0.0:
+                continue
+            target = self._nearest_aspect(index, aspect_positions)
+            if target is not None:
+                scores[target] += polarity
+
+        for aspect in ASPECT_KEYWORDS:
+            if aspect in mentioned_aspects:
+                details[aspect] = {
+                    "label": self._label_from_score(scores[aspect]),
+                    "mentioned": True,
+                }
+            elif aspect == "comida":
+                # Food is the central topic of a restaurant review: when it is not
+                # named explicitly, fall back to the overall tone. This is an
+                # inference, so it is not reported as an explicit mention.
+                details[aspect] = {
+                    "label": self._classify_text(text),
+                    "mentioned": False,
+                }
+
+        return details
+
+    def get_aspect_sentiment(self, text: str) -> Dict[str, str]:
+        """Classify each aspect as positive / neutral / negative."""
+        return {aspect: d["label"] for aspect, d in self.get_aspect_details(text).items()}
 
     def analyze_review(self, text: str) -> Dict[str, str]:
         return self.get_aspect_sentiment(text)
