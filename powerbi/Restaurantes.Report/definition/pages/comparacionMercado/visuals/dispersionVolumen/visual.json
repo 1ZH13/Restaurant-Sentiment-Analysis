@@ -46,7 +46,8 @@
                 }
               },
               "queryRef": "Aspectos.Diferencia vs su cocina",
-              "nativeQueryRef": "Diferencia vs su cocina"
+              "nativeQueryRef": "Diferencia vs su cocina",
+              "active": true
             }
           ]
         },

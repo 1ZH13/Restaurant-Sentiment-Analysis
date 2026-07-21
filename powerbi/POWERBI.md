@@ -246,7 +246,7 @@ creerles?* Los puntos muy a la izquierda o derecha con pocas reseñas son ruido.
 
 | Visual | Campos |
 |---|---|
-| Tabla | `Restaurante`, `Mejor aspecto`, `Peor aspecto`, `Brecha entre aspectos`, `Total reseñas` |
+| Matriz | Filas `Restaurante` · Valores `Mejor aspecto`, `Peor aspecto`, `Brecha entre aspectos`, `Total reseñas` |
 | Barras | Eje `Aspectos[Aspecto]` · Valor `% negativas` |
 | Matriz | Filas `CocinaPrincipal` · Columnas `Aspecto` · Valor `Saldo de opinión` |
 | **Árbol de descomposición** | Analizar `Menciones negativas` · Explicar por `Zona`, `CocinaPrincipal`, `BandaPrecio`, `Aspecto` |
