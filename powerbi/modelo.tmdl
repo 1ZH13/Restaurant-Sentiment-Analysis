@@ -1,0 +1,420 @@
+// ---------------------------------------------------------------------------
+// Modelo semantico de Power BI - Analisis de Resenas de Restaurantes (Grupo 5)
+//
+// Este archivo es la definicion del modelo en formato TMDL (texto). Se genera
+// exportando el modelo desde Power BI Desktop y sirve para revisar los cambios
+// en git: el .pbix es binario y no se puede diferenciar en un pull request.
+//
+// No se edita a mano: es el reflejo del modelo. Ver powerbi/POWERBI.md para la
+// explicacion de que hace cada tabla y cada medida.
+// ---------------------------------------------------------------------------
+
+model Model
+	culture: es-PA
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: es-PA
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+	/// Una fila por restaurante. Dimension principal del modelo.
+	table Restaurantes
+
+		column RestauranteID
+			dataType: string
+			sourceColumn: RestauranteID
+
+		column Restaurante
+			dataType: string
+			sourceColumn: Restaurante
+
+		column Cocina
+			dataType: string
+			sourceColumn: Cocina
+
+		column CocinaPrincipal
+			dataType: string
+			sourceColumn: CocinaPrincipal
+
+		column Zona
+			dataType: string
+			sourceColumn: Zona
+
+		column Direccion
+			dataType: string
+			sourceColumn: Direccion
+
+		column BandaPrecio
+			dataType: string
+			sourceColumn: BandaPrecio
+
+		column NivelPrecio
+			dataType: double
+			sourceColumn: NivelPrecio
+
+		column Calificacion
+			dataType: double
+			sourceColumn: Calificacion
+
+		column GrupoID
+			dataType: int64
+			sourceColumn: GrupoID
+
+		column Grupo
+			dataType: string
+			sourceColumn: Grupo
+
+		column Fuente
+			dataType: string
+			sourceColumn: Fuente
+
+		partition Restaurantes = m
+			mode: import
+			source =
+					let
+					    Columnas = Table.SelectColumns(DatosProcesados, {"restaurant_id", "restaurant_name", "category", "category_primary", "location", "address", "price_band", "price_level", "overall_rating", "cluster", "cluster_name", "source"}),
+					    Unicos = Table.Distinct(Columnas, {"restaurant_id"}),
+					    Renombrado = Table.RenameColumns(Unicos, {{"restaurant_id", "RestauranteID"}, {"restaurant_name", "Restaurante"}, {"category", "Cocina"}, {"category_primary", "CocinaPrincipal"}, {"location", "Zona"}, {"address", "Direccion"}, {"price_band", "BandaPrecio"}, {"price_level", "NivelPrecio"}, {"overall_rating", "Calificacion"}, {"cluster", "GrupoID"}, {"cluster_name", "Grupo"}, {"source", "Fuente"}}),
+					    Tipos = Table.TransformColumnTypes(Renombrado, {{"Calificacion", type number}, {"NivelPrecio", type number}, {"GrupoID", Int64.Type}})
+					in
+					    Tipos
+
+	/// Una fila por resena. Tabla de hechos principal.
+	table Resenas
+
+		/// Cantidad de resenas en el contexto actual.
+		measure 'Total resenas' = COUNTROWS(Resenas)
+			formatString: #,0
+			displayFolder: 1 Base
+
+		/// Restaurantes distintos con al menos una resena en el contexto actual.
+		measure 'Total restaurantes' = DISTINCTCOUNT(Resenas[RestauranteID])
+			formatString: #,0
+			displayFolder: 1 Base
+
+		/// Promedio de la calificacion que dio cada resena. Solo Degusta publica este dato.
+		measure 'Calificacion promedio' = AVERAGE(Resenas[CalificacionResena])
+			formatString: 0.00
+			displayFolder: 1 Base
+
+		/// Cuantas resenas traen calificacion propia. Sirve para declarar la cobertura del promedio.
+		measure 'Resenas con calificacion' = COUNTROWS(FILTER(Resenas, NOT ISBLANK(Resenas[CalificacionResena])))
+			formatString: #,0
+			displayFolder: 1 Base
+
+		/// Longitud media de las resenas en palabras.
+		measure 'Palabras por resena' = AVERAGE(Resenas[Palabras])
+			formatString: 0.0
+			displayFolder: 1 Base
+
+		/// Resenas del mes previo. Requiere la tabla Calendario marcada como tabla de fechas.
+		measure 'Resenas mes anterior' = CALCULATE([Total resenas], DATEADD(Calendario[Date], -1, MONTH))
+			formatString: #,0
+			displayFolder: 3 Tiempo
+
+		/// Crecimiento porcentual de resenas respecto al mes anterior.
+		measure 'Variacion mensual' =
+				VAR Actual = [Total resenas]
+				VAR Previo = [Resenas mes anterior]
+				RETURN IF(NOT ISBLANK(Previo) && Previo <> 0, DIVIDE(Actual - Previo, Previo))
+			formatString: 0.0%
+			displayFolder: 3 Tiempo
+
+		/// Mismo periodo del ano anterior, para comparar estacionalidad.
+		measure 'Resenas ano anterior' = CALCULATE([Total resenas], SAMEPERIODLASTYEAR(Calendario[Date]))
+			formatString: #,0
+			displayFolder: 3 Tiempo
+
+		/// Total acumulado hasta la fecha del contexto. Muestra como fue creciendo el dataset.
+		measure 'Resenas acumuladas' = CALCULATE([Total resenas], FILTER(ALL(Calendario), Calendario[Date] <= MAX(Calendario[Date])))
+			formatString: #,0
+			displayFolder: 3 Tiempo
+
+		/// Suaviza la serie mensual para ver la tendencia sin el ruido de meses sueltos.
+		measure 'Media movil 3 meses' = AVERAGEX(DATESINPERIOD(Calendario[Date], MAX(Calendario[Date]), -3, MONTH), [Total resenas])
+			formatString: 0.0
+			displayFolder: 3 Tiempo
+
+		/// Peso de la categoria dentro de lo que el usuario tiene seleccionado.
+		measure '% del total de resenas' = DIVIDE([Total resenas], CALCULATE([Total resenas], ALLSELECTED()))
+			formatString: 0.0%
+			displayFolder: 4 Comparacion
+
+		column ResenaID
+			dataType: int64
+			sourceColumn: ResenaID
+
+		column RestauranteID
+			dataType: string
+			sourceColumn: RestauranteID
+
+		column Fecha
+			dataType: dateTime
+			sourceColumn: Fecha
+
+		column CalificacionResena
+			dataType: double
+			sourceColumn: CalificacionResena
+
+		column Texto
+			dataType: string
+			sourceColumn: Texto
+
+		column Autor
+			dataType: string
+			sourceColumn: Autor
+
+		column Fuente
+			dataType: string
+			sourceColumn: Fuente
+
+		column Idioma
+			dataType: string
+			sourceColumn: Idioma
+
+		column Palabras
+			dataType: int64
+			sourceColumn: Palabras
+
+		column Caracteres
+			dataType: int64
+			sourceColumn: Caracteres
+
+		partition Resenas = m
+			mode: import
+			source =
+					let
+					    Columnas = Table.SelectColumns(DatosProcesados, {"ResenaID", "restaurant_id", "review_date", "review_rating", "review_text", "reviewer_name", "source", "review_language", "word_count", "char_count"}),
+					    Renombrado = Table.RenameColumns(Columnas, {{"restaurant_id", "RestauranteID"}, {"review_date", "Fecha"}, {"review_rating", "CalificacionResena"}, {"review_text", "Texto"}, {"reviewer_name", "Autor"}, {"source", "Fuente"}, {"review_language", "Idioma"}, {"word_count", "Palabras"}, {"char_count", "Caracteres"}}),
+					    Tipos = Table.TransformColumnTypes(Renombrado, {{"Fecha", type date}, {"CalificacionResena", type number}, {"Palabras", Int64.Type}, {"Caracteres", Int64.Type}})
+					in
+					    Tipos
+
+	/// Una fila por resena y aspecto (Comida, Servicio, Precio, Ambiente). Despivotar permite
+	/// segmentar por aspecto de forma nativa en Power BI, algo que la tabla ancha original no
+	/// permite. Mencionado indica si la resena hablo realmente de ese aspecto.
+	table Aspectos
+
+		/// Promedio del sentimiento (-1 a 1) contando SOLO las resenas que mencionaron el aspecto.
+		measure 'Sentimiento promedio' = CALCULATE(AVERAGE(Aspectos[Puntaje]), Aspectos[Mencionado] = TRUE())
+			formatString: 0.00
+			displayFolder: 2 Sentimiento
+
+		/// Cuantas resenas hablaron realmente del aspecto en el contexto actual.
+		measure Menciones = CALCULATE(COUNTROWS(Aspectos), Aspectos[Mencionado] = TRUE())
+			formatString: #,0
+			displayFolder: 2 Sentimiento
+
+		/// Porcentaje de resenas que mencionan el aspecto.
+		measure 'Cobertura de menciones' = DIVIDE([Menciones], COUNTROWS(Aspectos))
+			formatString: 0.0%
+			displayFolder: 2 Sentimiento
+
+		measure 'Menciones positivas' = CALCULATE(COUNTROWS(Aspectos), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Positivo")
+			formatString: #,0
+			displayFolder: 2 Sentimiento
+
+		measure 'Menciones negativas' = CALCULATE(COUNTROWS(Aspectos), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
+			formatString: #,0
+			displayFolder: 2 Sentimiento
+
+		/// Proporcion de menciones positivas sobre el total de menciones del aspecto.
+		measure '% positivas' = DIVIDE([Menciones positivas], [Menciones])
+			formatString: 0.0%
+			displayFolder: 2 Sentimiento
+
+		measure '% negativas' = DIVIDE([Menciones negativas], [Menciones])
+			formatString: 0.0%
+			displayFolder: 2 Sentimiento
+
+		/// Diferencia entre menciones positivas y negativas.
+		measure 'Saldo de opinion' = [% positivas] - [% negativas]
+			formatString: 0.0%
+			displayFolder: 2 Sentimiento
+
+		/// Sentimiento del mes previo, para ver si la percepcion mejora o empeora.
+		measure 'Sentimiento mes anterior' = CALCULATE([Sentimiento promedio], DATEADD(Calendario[Date], -1, MONTH))
+			formatString: 0.00
+			displayFolder: 3 Tiempo
+
+		/// Diferencia de sentimiento contra el mes anterior.
+		measure 'Cambio de sentimiento' =
+				VAR Actual = [Sentimiento promedio]
+				VAR Previo = [Sentimiento mes anterior]
+				RETURN IF(NOT ISBLANK(Previo), Actual - Previo)
+			formatString: +0.00;-0.00;0.00
+			displayFolder: 3 Tiempo
+
+		/// Sentimiento promedio de todos los restaurantes de la misma cocina.
+		measure 'Sentimiento de su cocina' = CALCULATE([Sentimiento promedio], ALLEXCEPT(Restaurantes, Restaurantes[CocinaPrincipal]))
+			formatString: 0.00
+			displayFolder: 4 Comparacion
+
+		/// Cuanto se despega un restaurante del promedio de su propia cocina.
+		measure 'Diferencia vs su cocina' = [Sentimiento promedio] - [Sentimiento de su cocina]
+			formatString: +0.00;-0.00;0.00
+			displayFolder: 4 Comparacion
+
+		measure 'Sentimiento de su zona' = CALCULATE([Sentimiento promedio], ALLEXCEPT(Restaurantes, Restaurantes[Zona]))
+			formatString: 0.00
+			displayFolder: 4 Comparacion
+
+		measure 'Diferencia vs su zona' = [Sentimiento promedio] - [Sentimiento de su zona]
+			formatString: +0.00;-0.00;0.00
+			displayFolder: 4 Comparacion
+
+		/// Posicion del restaurante segun sentimiento, recalculada con lo que el usuario filtre.
+		measure 'Ranking por sentimiento' = IF(NOT ISBLANK([Sentimiento promedio]), RANKX(ALLSELECTED(Restaurantes[Restaurante]), [Sentimiento promedio], , DESC, DENSE))
+			formatString: #,0
+			displayFolder: 4 Comparacion
+
+		/// Distancia entre el aspecto mejor y el peor valorado. Un valor alto senala un
+		/// restaurante desparejo: por ejemplo, buena comida pero mal servicio.
+		measure 'Brecha entre aspectos' =
+				VAR Tabla = ADDCOLUMNS(VALUES(Aspectos[Aspecto]), "@S", [Sentimiento promedio])
+				VAR Validos = FILTER(Tabla, NOT ISBLANK([@S]))
+				VAR Mejor = MAXX(Validos, [@S])
+				VAR Peor = MINX(Validos, [@S])
+				RETURN IF(COUNTROWS(Validos) > 1, Mejor - Peor)
+			formatString: 0.00
+			displayFolder: 5 Desbalance
+
+		/// Aspecto con mejor sentimiento en el contexto actual.
+		measure 'Mejor aspecto' =
+				VAR Tabla = ADDCOLUMNS(VALUES(Aspectos[Aspecto]), "@S", [Sentimiento promedio])
+				VAR Validos = FILTER(Tabla, NOT ISBLANK([@S]))
+				VAR Maximo = MAXX(Validos, [@S])
+				RETURN CONCATENATEX(FILTER(Validos, [@S] = Maximo), Aspectos[Aspecto], ", ")
+			displayFolder: 5 Desbalance
+
+		/// Aspecto con peor sentimiento en el contexto actual.
+		measure 'Peor aspecto' =
+				VAR Tabla = ADDCOLUMNS(VALUES(Aspectos[Aspecto]), "@S", [Sentimiento promedio])
+				VAR Validos = FILTER(Tabla, NOT ISBLANK([@S]))
+				VAR Minimo = MINX(Validos, [@S])
+				RETURN CONCATENATEX(FILTER(Validos, [@S] = Minimo), Aspectos[Aspecto], ", ")
+			displayFolder: 5 Desbalance
+
+		/// Restaurantes que acumulan al menos una mencion negativa del aspecto seleccionado.
+		measure 'Restaurantes con quejas' = CALCULATE(DISTINCTCOUNT(Resenas[RestauranteID]), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
+			formatString: #,0
+			displayFolder: 5 Desbalance
+
+		column ResenaID
+			dataType: int64
+			sourceColumn: ResenaID
+
+		column Aspecto
+			dataType: string
+			sourceColumn: Aspecto
+
+		column Sentimiento
+			dataType: string
+			sourceColumn: Sentimiento
+
+		column Puntaje
+			dataType: double
+			sourceColumn: Puntaje
+
+		column Mencionado
+			dataType: boolean
+			sourceColumn: Mencionado
+
+		partition Aspectos = m
+			mode: import
+			source =
+					let
+					    PorAspecto = (nombre as text, colEtiqueta as text, colPuntaje as text, colMencion as text) as table =>
+					        let
+					            Sel = Table.SelectColumns(DatosProcesados, {"ResenaID", colEtiqueta, colPuntaje, colMencion}),
+					            Ren = Table.RenameColumns(Sel, {{colEtiqueta, "Sentimiento"}, {colPuntaje, "Puntaje"}, {colMencion, "Mencionado"}}),
+					            Con = Table.AddColumn(Ren, "Aspecto", each nombre, type text)
+					        in
+					            Con,
+					    Todos = Table.Combine({
+					        PorAspecto("Comida", "sentiment_comida", "sentiment_comida_score", "mentions_comida"),
+					        PorAspecto("Servicio", "sentiment_servicio", "sentiment_servicio_score", "mentions_servicio"),
+					        PorAspecto("Precio", "sentiment_precio", "sentiment_precio_score", "mentions_precio"),
+					        PorAspecto("Ambiente", "sentiment_ambiente", "sentiment_ambiente_score", "mentions_ambiente")
+					    }),
+					    Etiquetas = Table.TransformColumns(Todos, {{"Sentimiento", each if _ = "positive" then "Positivo" else if _ = "negative" then "Negativo" else "Neutral", type text}}),
+					    Logico = Table.TransformColumns(Etiquetas, {{"Mencionado", each _ = "True", type logical}}),
+					    Tipos = Table.TransformColumnTypes(Logico, {{"Puntaje", type number}}),
+					    Orden = Table.SelectColumns(Tipos, {"ResenaID", "Aspecto", "Sentimiento", "Puntaje", "Mencionado"})
+					in
+					    Orden
+
+	/// Tabla de fechas continua derivada del rango real de las resenas. Habilita la
+	/// inteligencia de tiempo (tendencias, ano contra ano, acumulados).
+	table Calendario
+		dataCategory: Time
+
+		column Date
+			isUnique
+			isNameInferred
+			sourceColumn: [Date]
+
+		column Ano
+			isNameInferred
+			sourceColumn: [Ano]
+
+		column NumeroMes
+			isNameInferred
+			sourceColumn: [NumeroMes]
+
+		column Mes
+			isNameInferred
+			sourceColumn: [Mes]
+
+		column AnoMes
+			isNameInferred
+			sourceColumn: [AnoMes]
+
+		column Trimestre
+			isNameInferred
+			sourceColumn: [Trimestre]
+
+		column AnoTrimestre
+			isNameInferred
+			sourceColumn: [AnoTrimestre]
+
+		partition Calendario = calculated
+			mode: import
+			source =
+					ADDCOLUMNS(
+					    CALENDAR(DATE(YEAR(MIN(Resenas[Fecha])), 1, 1), DATE(YEAR(MAX(Resenas[Fecha])), 12, 31)),
+					    "Ano", YEAR([Date]),
+					    "NumeroMes", MONTH([Date]),
+					    "Mes", FORMAT([Date], "MMMM", "es-ES"),
+					    "AnoMes", FORMAT([Date], "yyyy-MM"),
+					    "Trimestre", "T" & FORMAT([Date], "Q"),
+					    "AnoTrimestre", FORMAT([Date], "yyyy") & "-T" & FORMAT([Date], "Q")
+					)
+
+	relationship Restaurantes_Resenas
+		fromColumn: Resenas.RestauranteID
+		toColumn: Restaurantes.RestauranteID
+
+	relationship Resenas_Aspectos
+		fromColumn: Aspectos.ResenaID
+		toColumn: Resenas.ResenaID
+
+	relationship Calendario_Resenas
+		fromColumn: Resenas.Fecha
+		toColumn: Calendario.Date
+
+	cultureInfo es-PA
+
+	/// Carpeta con los CSV procesados del pipeline. Cada integrante debe cambiar este valor por
+	/// la ruta de su propia copia del repositorio.
+	expression RutaDatos = "C:\Users\ZH\Desktop\Restaurant-Sentiment-Analysis\data\processed" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+
+	/// Carga restaurants_clustered.csv y agrega ResenaID. Las tablas Restaurantes, Resenas y
+	/// Aspectos derivan de aqui, de modo que comparten los mismos identificadores.
+	expression DatosProcesados =
+			let
+			    Origen = Csv.Document(File.Contents(RutaDatos & "\restaurants_clustered.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+			    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),
+			    ConIndice = Table.AddIndexColumn(Encabezados, "ResenaID", 1, 1, Int64.Type)
+			in
+			    ConIndice

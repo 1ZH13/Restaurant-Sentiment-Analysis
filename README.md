@@ -194,6 +194,9 @@ restaurant-sentiment-analysis/
 │   │   ├── aspects.py             # promedios de sentimiento conscientes de cobertura
 │   │   └── i18n.py
 │   └── views/                     # 6 páginas (render(df))
+├── powerbi/
+│   ├── modelo.tmdl                # el modelo en texto, revisable en git
+│   └── POWERBI.md                 # documentación del modelo y sus medidas
 ├── tests/                         # pruebas unitarias + de dashboard + e2e
 ├── run_pipeline.py                # pipeline ETL+ML en un comando
 ├── requirements.txt
@@ -384,7 +387,22 @@ garantías que se rompieron alguna vez y no deben volver a romperse:
 | **Pipeline de datos** | 30% | ETL funcional y documentado con **2 fuentes reales** (Degusta + RestaurantGuru), 997 reseñas de 207 restaurantes; unificación de identidad entre fuentes y deduplicación; reproducible con `run_pipeline.py` |
 | **Análisis ML** | 25% | Clustering K-Means por restaurante con *k* elegido por silhouette + análisis de sentimiento por aspecto con atribución por cercanía |
 | **Dashboard** | 25% | 6 páginas interactivas en Streamlit; filtros y búsqueda que afectan a todos los gráficos; cada gráfico declara sobre cuántos datos se apoya |
-| **Documentación** | 20% | Este README + `PRD.md` + `docs/TECHNICAL_SPEC.md` + `docs/EXPLICACION_PROYECTO.md` + docstrings |
+| **Documentación** | 20% | Este README + `PRD.md` + `docs/TECHNICAL_SPEC.md` + `docs/EXPLICACION_PROYECTO.md` + `powerbi/POWERBI.md` + docstrings |
+
+### Componente de Business Intelligence
+
+El proyecto incluye además un modelo de **Power BI** (`powerbi/`) que **no repite**
+lo que muestra Streamlit. El reparto es deliberado:
+
+- **Streamlit produce el análisis**: sentimiento por aspecto desde el texto,
+  clustering K-Means, recomendador.
+- **Power BI explora ese resultado**: evolución en el tiempo (el dashboard no
+  tiene ninguna gráfica temporal, y hay fechas de 2019 a 2026), comparación de
+  cada restaurante contra el promedio de su cocina y su zona, ranking dinámico y
+  análisis de desbalance entre aspectos.
+
+Ver [powerbi/POWERBI.md](powerbi/POWERBI.md) para el modelo, las 30 medidas DAX y
+las páginas propuestas.
 
 ---
 
