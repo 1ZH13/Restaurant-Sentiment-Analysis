@@ -34,8 +34,14 @@
         }
       }
     },
-    "drillFilterOtherVisuals": true,
     "objects": {
+      "general": [
+        {
+          "properties": {}
+        }
+      ]
+    },
+    "visualContainerObjects": {
       "title": [
         {
           "properties": {
@@ -63,6 +69,7 @@
           }
         }
       ]
-    }
+    },
+    "drillFilterOtherVisuals": true
   }
 }

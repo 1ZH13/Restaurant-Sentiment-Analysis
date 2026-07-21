@@ -17,3 +17,4 @@ relationship Calendario_Aspectos
 relationship Aspecto_Aspectos
 	fromColumn: Aspectos.Aspecto
 	toColumn: Aspecto.Aspecto
+

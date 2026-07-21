@@ -110,7 +110,10 @@
             }
           }
         }
-      ],
+      ]
+    },
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
       "title": [
         {
           "properties": {
@@ -138,7 +141,6 @@
           }
         }
       ]
-    },
-    "drillFilterOtherVisuals": true
+    }
   }
 }

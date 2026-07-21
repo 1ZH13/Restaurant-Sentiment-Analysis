@@ -130,19 +130,6 @@ table Aspectos
 		lineageTag: 22e3e5f2-32c0-4139-a4c6-e02244715c3b
 		sourceColumn: ReseñaID
 
-	/// Clave hacia la dimension Restaurantes. Se trae hasta aqui para que Aspectos
-	/// apunte directo a sus dimensiones, como exige un modelo en estrella.
-	column RestauranteID
-		dataType: string
-		lineageTag: 9c1f4a20-5b3e-4d71-8e62-1a4f7c93b501
-		sourceColumn: RestauranteID
-
-	/// Clave hacia la dimension Calendario.
-	column Fecha
-		dataType: dateTime
-		lineageTag: 3e8a7b14-6d2c-4f90-a731-5c8e2b46d907
-		sourceColumn: Fecha
-
 	column Aspecto
 		dataType: string
 		lineageTag: 0223d5cd-e46b-430c-81fd-c402b567737f
@@ -162,6 +149,25 @@ table Aspectos
 		dataType: boolean
 		lineageTag: 66bab915-a247-43cd-871b-63318c0ee3e9
 		sourceColumn: Mencionado
+
+	/// Clave hacia la dimension Restaurantes. Se trae hasta aqui para que Aspectos
+	/// apunte directo a sus dimensiones, como exige un modelo en estrella.
+	column RestauranteID
+		dataType: string
+		lineageTag: 9c1f4a20-5b3e-4d71-8e62-1a4f7c93b501
+		sourceColumn: RestauranteID
+
+	/// Clave hacia la dimension Calendario.
+	column Fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 3e8a7b14-6d2c-4f90-a731-5c8e2b46d907
+		summarizeBy: none
+		sourceColumn: Fecha
+
+		annotation UnderlyingDateTimeDataType = Date
+
+		annotation SummarizationSetBy = Automatic
 
 	partition Aspectos = m
 		mode: import

@@ -72,7 +72,7 @@
       }
     },
     "drillFilterOtherVisuals": true,
-    "objects": {
+    "visualContainerObjects": {
       "title": [
         {
           "properties": {
