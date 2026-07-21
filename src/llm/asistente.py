@@ -35,7 +35,16 @@ try:
 except ImportError:  # pragma: no cover
     genai = None
 
-MODELO_POR_DEFECTO = "gemini-2.0-flash"
+# Google retira modelos para las claves nuevas sin previo aviso: gemini-2.0-flash
+# y gemini-2.5-flash ya devuelven 404/429 aunque sigan apareciendo en el listado
+# de la API. Si el asistente empieza a fallar, comprobar cual sigue vivo con:
+#     python -m src.llm.modelos_disponibles
+MODELO_POR_DEFECTO = "gemini-3.5-flash"
+
+# El SDK de Google acepta la clave con cualquiera de estos dos nombres, asi que
+# los aceptamos tambien aqui: si solo estuviera GEMINI_API_KEY, el dashboard
+# diria "no disponible" aunque la libreria si pudiera conectarse.
+NOMBRES_DE_CLAVE = ("GOOGLE_API_KEY", "GEMINI_API_KEY")
 
 
 class LLMNoDisponible(RuntimeError):
@@ -56,19 +65,28 @@ def _cargar_env() -> None:
             os.environ.setdefault(clave.strip(), valor.strip().strip('"').strip("'"))
 
 
+def _leer_clave() -> str:
+    """Devuelve la clave de la API, mirando los dos nombres que acepta el SDK."""
+    for nombre in NOMBRES_DE_CLAVE:
+        valor = os.environ.get(nombre)
+        if valor:
+            return valor
+    return ""
+
+
 def hay_clave() -> bool:
     """Indica si el asistente puede funcionar en esta maquina."""
     _cargar_env()
-    return genai is not None and bool(os.environ.get("GOOGLE_API_KEY"))
+    return genai is not None and bool(_leer_clave())
 
 
 def motivo_no_disponible() -> str:
     """Explica en una frase por que no se puede usar el asistente."""
     if genai is None:
-        return ("Falta el paquete google-generativeai. "
+        return ("Falta el paquete google-genai. "
                 "Instalalo con: pip install -r requirements.txt")
     _cargar_env()
-    if not os.environ.get("GOOGLE_API_KEY"):
+    if not _leer_clave():
         return ("Falta la clave de la API. Crea un archivo .env en la raiz del "
                 "proyecto con GOOGLE_API_KEY=tu_clave. La clave es gratuita y se "
                 "obtiene en https://aistudio.google.com/apikey")
@@ -90,7 +108,7 @@ class AsistenteDatos:
         if not hay_clave():
             raise LLMNoDisponible(motivo_no_disponible())
         _cargar_env()
-        self.cliente = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+        self.cliente = genai.Client(api_key=_leer_clave())
         self.nombre_modelo = modelo or os.environ.get("GEMINI_MODEL", MODELO_POR_DEFECTO)
 
     # ------------------------------------------------------------------ interno
@@ -103,7 +121,12 @@ class AsistenteDatos:
     def resumir_restaurante(self, nombre: str, resenas: List[str],
                             maximo: int = 25) -> Respuesta:
         """Resume que dicen las resenas de un restaurante."""
-        muestra = [str(r).strip() for r in resenas if str(r).strip()][:maximo]
+        # Ojo con el orden: hay que descartar los nulos ANTES de convertir a
+        # texto, porque str(None) es "None" y str(nan) es "nan" -- ambos son
+        # cadenas no vacias que se colarian al prompt como si fueran resenas.
+        muestra = [texto for texto in (str(r).strip() for r in resenas
+                                       if r is not None and not pd.isna(r))
+                   if texto][:maximo]
         if not muestra:
             return Respuesta("Este restaurante no tiene resenas con texto.")
 
@@ -176,6 +199,7 @@ def construir_contexto(df: pd.DataFrame, maximo_filas: int = 12) -> str:
     las preguntas y mantiene el prompt en un tamano razonable.
     """
     from dashboard.utils.aspects import all_aspect_summaries
+    from src.preprocessing.calidad import nota_de_limitacion, ratings_sospechosos
 
     partes: List[str] = []
     partes.append(
@@ -207,7 +231,14 @@ def construir_contexto(df: pd.DataFrame, maximo_filas: int = 12) -> str:
                   for r in mejores.itertuples()]
         partes.append("MEJOR CALIFICADOS\n" + "\n".join(lineas) + "\n")
 
+    # Los restaurantes con la calificacion corrupta de RestaurantGuru se apartan
+    # del ranking: si entraran, el asistente afirmaria con total seguridad que el
+    # peor restaurante es uno cuyas resenas son elogiosas.
+    sospechosos = ratings_sospechosos(df)
+    nombres_dudosos = set(sospechosos["restaurant_name"])
+
     peores = (df.dropna(subset=["overall_rating"])
+                .loc[lambda d: ~d["restaurant_name"].isin(nombres_dudosos)]
                 .groupby("restaurant_name", as_index=False)
                 .agg(nota=("overall_rating", "mean"), resenas=("review_text", "size"))
                 .sort_values("nota")
@@ -216,6 +247,12 @@ def construir_contexto(df: pd.DataFrame, maximo_filas: int = 12) -> str:
         lineas = [f"  {r.restaurant_name}: {r.nota:.1f} ({int(r.resenas)} resenas)"
                   for r in peores.itertuples()]
         partes.append("PEOR CALIFICADOS\n" + "\n".join(lineas) + "\n")
+
+    aviso = nota_de_limitacion(sospechosos)
+    if aviso:
+        partes.append("LIMITACION CONOCIDA DE LOS DATOS\n  " + aviso +
+                      "\n  Si te preguntan por el peor restaurante, menciona esta "
+                      "limitacion en lugar de dar por buena esa calificacion.\n")
 
     columna_cocina = "category_primary" if "category_primary" in df.columns else "category"
     if columna_cocina in df.columns:

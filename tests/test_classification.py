@@ -151,21 +151,81 @@ class TestAsistenteSinClave:
     def test_informa_el_motivo_en_lugar_de_fallar(self, monkeypatch):
         from src.llm import asistente
 
-        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+        for nombre in asistente.NOMBRES_DE_CLAVE:
+            monkeypatch.delenv(nombre, raising=False)
         monkeypatch.setattr(asistente, "_cargar_env", lambda: None)
 
         assert asistente.hay_clave() is False
         motivo = asistente.motivo_no_disponible()
-        assert "GOOGLE_API_KEY" in motivo or "google-generativeai" in motivo
+        assert "GOOGLE_API_KEY" in motivo or "google-genai" in motivo
 
     def test_construir_asistente_lanza_error_claro(self, monkeypatch):
         from src.llm import asistente
 
-        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+        for nombre in asistente.NOMBRES_DE_CLAVE:
+            monkeypatch.delenv(nombre, raising=False)
         monkeypatch.setattr(asistente, "_cargar_env", lambda: None)
 
         with pytest.raises(asistente.LLMNoDisponible):
             asistente.AsistenteDatos()
+
+    def test_acepta_la_clave_con_el_nombre_alterno(self, monkeypatch):
+        """El SDK acepta GEMINI_API_KEY, asi que el dashboard tambien debe."""
+        from src.llm import asistente
+
+        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+        monkeypatch.setenv("GEMINI_API_KEY", "clave-de-prueba")
+        monkeypatch.setattr(asistente, "_cargar_env", lambda: None)
+
+        assert asistente.hay_clave() is True
+
+    def test_el_modelo_por_defecto_coincide_con_env_example(self):
+        """Si .env.example documenta un modelo, el default no puede ser otro."""
+        from src.llm import asistente
+
+        with open(".env.example", encoding="utf-8") as f:
+            documentado = next(l.split("=", 1)[1].strip()
+                               for l in f if l.startswith("GEMINI_MODEL="))
+        assert asistente.MODELO_POR_DEFECTO == documentado
+
+
+class TestResumenDeResenas:
+    """El resumen no debe mandarle basura al modelo."""
+
+    def _asistente_falso(self, monkeypatch):
+        from src.llm import asistente
+
+        monkeypatch.setenv("GOOGLE_API_KEY", "clave-de-prueba")
+        monkeypatch.setattr(asistente, "_cargar_env", lambda: None)
+
+        enviados = {}
+
+        class FakeModels:
+            def generate_content(self, model, contents):
+                enviados["prompt"] = contents
+                return type("R", (), {"text": "resumen"})()
+
+        class FakeClient:
+            def __init__(self, **kw):
+                self.models = FakeModels()
+
+        monkeypatch.setattr(asistente.genai, "Client", FakeClient)
+        return asistente.AsistenteDatos(), enviados
+
+    def test_descarta_nulos_en_lugar_de_mandarlos_como_texto(self, monkeypatch):
+        """str(None) es 'None': si no se filtra antes, llega al prompt."""
+        import numpy as np
+
+        a, _ = self._asistente_falso(monkeypatch)
+        respuesta = a.resumir_restaurante("X", [None, np.nan, "   "])
+        assert "no tiene resenas con texto" in respuesta.texto
+
+    def test_los_nulos_no_se_cuelan_al_prompt(self, monkeypatch):
+        a, enviados = self._asistente_falso(monkeypatch)
+        a.resumir_restaurante("X", ["comida rica", None])
+
+        assert "- None" not in enviados["prompt"]
+        assert "comida rica" in enviados["prompt"]
 
 
 class TestContextoDelLLM:

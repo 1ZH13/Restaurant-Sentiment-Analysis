@@ -14,6 +14,7 @@ import streamlit as st
 
 from dashboard.utils.aspects import ASPECT_LABELS, ASPECTS, all_aspect_summaries, coverage_note, mention_mask, overall_sentiment
 from dashboard.utils.restaurants import format_restaurant_label, restaurant_directory
+from src.preprocessing.calidad import ratings_sospechosos
 
 TRANSPARENT = "rgba(0,0,0,0)"
 
@@ -108,6 +109,17 @@ def _render_header(rest_df: pd.DataFrame) -> None:
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Algunas calificaciones de RestaurantGuru contradicen el texto de sus
+        # propias resenas (ver src/preprocessing/calidad.py). Mostrar el numero
+        # a secas haria que el lector se fiara de un dato que sabemos que falla.
+        if not ratings_sospechosos(rest_df).empty:
+            st.warning(
+                "La calificación de este restaurante no es fiable: contradice el "
+                "texto de sus reseñas por una inconsistencia en la fuente "
+                "(RestaurantGuru publica un valor distinto al que muestra en su "
+                "web). Queda excluido de los rankings del proyecto.",
+                icon="⚠️")
 
         badges = [_clean_display(info.get(c)) for c in
                   ("category", "price_band", "price_range", "location")]

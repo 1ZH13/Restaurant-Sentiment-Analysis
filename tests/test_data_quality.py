@@ -8,6 +8,7 @@ point, so they exist to keep those defects from coming back.
 """
 
 import re
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -22,6 +23,7 @@ from src.ingestion.build_dataset import (
     unify_restaurants,
 )
 from src.ingestion.restaurantguru_scraper import make_restaurant_id
+from src.preprocessing.calidad import ratings_sospechosos
 from src.preprocessing.cleaner import (
     add_price_band,
     add_primary_category,
@@ -236,3 +238,74 @@ class TestCategoryHandling:
         result = clean_dataframe(df)
         assert "," in result["category"].iloc[0]
         assert result["category_primary"].iloc[0] == "Española"
+
+
+class TestCalificacionesNoFiables:
+    """RestaurantGuru publica un aggregateRating que contradice a su propia web.
+
+    Verificado contra la fuente en julio de 2026: la ficha de "Aji de Cali"
+    muestra 4.6/5 pero su JSON-LD declara ratingValue 1.1 con bestRating 5. El
+    scraper lee el JSON-LD, asi que el dato entra corrupto al conjunto. No se
+    puede corregir sin volver a scrapear, de modo que se detecta y se declara.
+    """
+
+    @pytest.fixture
+    def datos_reales(self):
+        from dashboard.utils.i18n import translate_dashboard_dataframe
+        from src.sentiment.aspect_scores import derive_aspect_sentiment_scores
+
+        ruta = "data/processed/restaurants_clustered.csv"
+        if not Path(ruta).exists():
+            pytest.skip("hace falta correr el pipeline")
+        return derive_aspect_sentiment_scores(
+            translate_dashboard_dataframe(pd.read_csv(ruta)))
+
+    def test_detecta_los_casos_conocidos(self, datos_reales):
+        nombres = set(ratings_sospechosos(datos_reales)["restaurant_name"])
+        assert "Aji de Cali" in nombres
+
+    def test_el_problema_no_crece_sin_que_nos_enteremos(self, datos_reales):
+        """Si un rescrape mete mas casos, este test avisa en lugar de callarse."""
+        sospechosos = ratings_sospechosos(datos_reales)
+        assert len(sospechosos) == 3, (
+            f"cambio el numero de calificaciones no fiables: "
+            f"{sospechosos['restaurant_name'].tolist()}")
+
+    def test_un_restaurante_mediocre_no_se_marca(self):
+        """3.0 con una resena buena es normal: es el minimo real de Degusta."""
+        df = pd.DataFrame({
+            "restaurant_name": ["Normalito"],
+            "overall_rating": [3.0],
+            "sentiment_comida_score": [0.8],
+        })
+        assert ratings_sospechosos(df).empty
+
+    def test_marca_calificacion_pesima_con_texto_bueno(self):
+        df = pd.DataFrame({
+            "restaurant_name": ["Contradictorio"] * 2,
+            "overall_rating": [1.1, 1.1],
+            "sentiment_comida_score": [0.9, 0.7],
+        })
+        assert ratings_sospechosos(df)["restaurant_name"].tolist() == ["Contradictorio"]
+
+    def test_no_marca_calificacion_pesima_con_texto_pesimo(self):
+        """Un restaurante genuinamente malo no es un error de datos."""
+        df = pd.DataFrame({
+            "restaurant_name": ["Malo de verdad"],
+            "overall_rating": [1.5],
+            "sentiment_comida_score": [-0.8],
+        })
+        assert ratings_sospechosos(df).empty
+
+    def test_aguanta_datos_sin_columnas_de_sentimiento(self):
+        df = pd.DataFrame({"restaurant_name": ["X"], "overall_rating": [1.0]})
+        assert ratings_sospechosos(df).empty
+
+    def test_el_asistente_no_recibe_el_ranking_corrupto(self, datos_reales):
+        """El contexto del LLM es lo que hace que afirme el dato falso."""
+        from src.llm.asistente import construir_contexto
+
+        contexto = construir_contexto(datos_reales)
+        peores = contexto.split("PEOR CALIFICADOS")[1].split("\n\n")[0]
+        assert "Aji de Cali" not in peores
+        assert "LIMITACION CONOCIDA DE LOS DATOS" in contexto
