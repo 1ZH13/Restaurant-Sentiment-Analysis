@@ -10,6 +10,8 @@ annotation __PBI_TimeIntelligenceEnabled = 1
 
 annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
 
+annotation PBI_QueryOrder = ["Restaurantes","Reseñas","Aspectos","RutaDatos","DatosProcesados"]
+
 ref table Restaurantes
 ref table Reseñas
 ref table Aspectos

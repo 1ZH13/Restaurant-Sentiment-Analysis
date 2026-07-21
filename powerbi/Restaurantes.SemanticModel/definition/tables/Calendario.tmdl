@@ -1,4 +1,4 @@
-/// Tabla de fechas continua derivada del rango real de las resenas. Habilita las funciones de inteligencia de tiempo (tendencias, ano contra ano, acumulados) que el dashboard de Streamlit no ofrece.
+/// Tabla de fechas continua derivada del rango real de las reseñas. Habilita las funciones de inteligencia de tiempo (tendencias, año contra año, acumulados) que el dashboard de Streamlit no ofrece.
 table Calendario
 	lineageTag: 5ee5c239-998b-4b41-9483-b2542c45d26f
 	dataCategory: Time
@@ -42,8 +42,18 @@ table Calendario
 	partition Calendario = calculated
 		mode: import
 		source =
+				VAR FechaMinima = MIN(Reseñas[Fecha])
+				VAR FechaMaxima = MAX(Reseñas[Fecha])
+				// Si Reseñas todavia no tiene datos cargados, MIN y MAX devuelven vacio
+				// y DATE(YEAR(BLANK()), 1, 1) da una fecha invalida que hace fallar toda
+				// la tabla. Al abrir el proyecto por primera vez, o tras borrar la cache,
+				// ese es justamente el estado. Estos valores de reserva cubren el rango
+				// real del dataset y quedan reemplazados en cuanto se actualiza.
+				VAR AnioInicio = IF(ISBLANK(FechaMinima), 2019, YEAR(FechaMinima))
+				VAR AnioFin = IF(ISBLANK(FechaMaxima), YEAR(TODAY()), YEAR(FechaMaxima))
+				RETURN
 				ADDCOLUMNS(
-				    CALENDAR(DATE(YEAR(MIN(Reseñas[Fecha])), 1, 1), DATE(YEAR(MAX(Reseñas[Fecha])), 12, 31)),
+				    CALENDAR(DATE(AnioInicio, 1, 1), DATE(AnioFin, 12, 31)),
 				    "Año", YEAR([Date]),
 				    "NúmeroMes", MONTH([Date]),
 				    "Mes", FORMAT([Date], "MMMM", "es-ES"),

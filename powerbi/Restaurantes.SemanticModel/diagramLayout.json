@@ -19,7 +19,7 @@
             "height": 300,
             "width": 234
           },
-          "zIndex": 0
+          "zIndex": 1
         },
         {
           "location": {
@@ -32,7 +32,7 @@
             "height": 300,
             "width": 234
           },
-          "zIndex": 0
+          "zIndex": 2
         },
         {
           "location": {
@@ -45,7 +45,7 @@
             "height": 200,
             "width": 234
           },
-          "zIndex": 0
+          "zIndex": 3
         },
         {
           "location": {
@@ -58,7 +58,7 @@
             "height": 248,
             "width": 234
           },
-          "zIndex": 0
+          "zIndex": 4
         }
       ],
       "name": "Todas las tablas",

@@ -1,32 +1,32 @@
-/// Una fila por resena. Tabla de hechos principal.
+/// Una fila por reseña. Tabla de hechos principal.
 table Reseñas
 	lineageTag: 7d6e3171-d01f-450b-a1af-d86a3bc470f5
 
-	/// Cantidad de resenas en el contexto actual.
+	/// Cantidad de reseñas en el contexto actual.
 	measure 'Total reseñas' = COUNTROWS(Reseñas)
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: 101ccb52-df0d-460c-99ad-ca94715901c0
 
-	/// Restaurantes distintos con al menos una resena en el contexto actual.
+	/// Restaurantes distintos con al menos una reseña en el contexto actual.
 	measure 'Total restaurantes' = DISTINCTCOUNT(Reseñas[RestauranteID])
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: aee6b39b-bc7b-429b-84c7-875d6d2dcc92
 
-	/// Promedio de la calificacion que dio cada resena. Solo Degusta publica este dato.
+	/// Promedio de la calificación que dio cada reseña. Solo Degusta publica este dato.
 	measure 'Calificación promedio' = AVERAGE(Reseñas[CalificaciónReseña])
 		formatString: 0.00
 		displayFolder: 1 Base
 		lineageTag: dd3be4ba-36f3-408e-bead-6cf4d284c2ee
 
-	/// Cuantas resenas traen calificacion propia. Sirve para declarar la cobertura del promedio.
+	/// Cuántas reseñas traen calificación propia. Sirve para declarar la cobertura del promedio.
 	measure 'Reseñas con calificación' = COUNTROWS(FILTER(Reseñas, NOT ISBLANK(Reseñas[CalificaciónReseña])))
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: d0442218-6400-402b-9f8c-38ad2e567029
 
-	/// Longitud media de las resenas en palabras.
+	/// Longitud media de las reseñas en palabras.
 	measure 'Palabras por reseña' = AVERAGE(Reseñas[Palabras])
 		formatString: 0.0
 		displayFolder: 1 Base
@@ -38,7 +38,7 @@ table Reseñas
 		displayFolder: 3 Tiempo
 		lineageTag: f6687434-4477-4190-a9ce-d3a36d4c8533
 
-	/// Crecimiento porcentual de resenas respecto al mes anterior.
+	/// Crecimiento porcentual de reseñas respecto al mes anterior.
 	measure 'Variación mensual' =
 			VAR Actual = [Total reseñas]
 			VAR Previo = [Reseñas mes anterior]
@@ -47,7 +47,7 @@ table Reseñas
 		displayFolder: 3 Tiempo
 		lineageTag: 9f0190a1-9a91-4a84-88c6-94960fdeae8c
 
-	/// Mismo periodo del ano anterior, para comparar estacionalidad.
+	/// Mismo período del año anterior, para comparar estacionalidad.
 	measure 'Reseñas año anterior' = CALCULATE([Total reseñas], SAMEPERIODLASTYEAR(Calendario[Date]))
 		formatString: #,0
 		displayFolder: 3 Tiempo
@@ -65,7 +65,7 @@ table Reseñas
 		displayFolder: 3 Tiempo
 		lineageTag: a74df70b-484b-4d21-980b-e881a7f66e4e
 
-	/// Peso de la categoria dentro de lo que el usuario tiene seleccionado.
+	/// Peso de la categoría dentro de lo que el usuario tiene seleccionado.
 	measure '% del total de reseñas' = DIVIDE([Total reseñas], CALCULATE([Total reseñas], ALLSELECTED()))
 		formatString: 0.0%
 		displayFolder: 4 Comparacion
@@ -83,8 +83,14 @@ table Reseñas
 
 	column Fecha
 		dataType: dateTime
+		formatString: Long Date
 		lineageTag: ff2942cb-3bca-41ec-81a9-07c257ce8f9d
+		summarizeBy: none
 		sourceColumn: Fecha
+
+		annotation UnderlyingDateTimeDataType = Date
+
+		annotation SummarizationSetBy = Automatic
 
 	column CalificaciónReseña
 		dataType: double

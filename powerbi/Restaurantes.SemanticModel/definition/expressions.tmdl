@@ -1,8 +1,10 @@
-/// Carpeta con los CSV procesados del pipeline. Cada integrante debe cambiar este valor por la ruta de su propia copia del repositorio (Inicio > Transformar datos > Administrar parametros).
+/// Carpeta con los CSV procesados del pipeline. Cada integrante debe cambiar este valor por la ruta de su propia copia del repositorio (Inicio > Transformar datos > Administrar parámetros).
 expression RutaDatos = "C:\Users\ZH\Desktop\Restaurant-Sentiment-Analysis\data\processed" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
 	lineageTag: 72aa3b28-0f7f-4ed9-aa8d-5c942b3ab3de
 
-/// Carga restaurants_clustered.csv y agrega ReseñaID. Las tablas Restaurantes, Reseñas y Aspectos derivan de aqui, de modo que comparten los mismos identificadores.
+	annotation PBI_ResultType = Text
+
+/// Carga restaurants_clustered.csv y agrega ReseñaID. Las tablas Restaurantes, Reseñas y Aspectos derivan de aquí, de modo que comparten los mismos identificadores.
 expression DatosProcesados =
 		let
 		    Origen = Csv.Document(File.Contents(RutaDatos & "\restaurants_clustered.csv"), [Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
