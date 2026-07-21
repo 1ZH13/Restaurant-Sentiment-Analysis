@@ -11,6 +11,29 @@
   },
   "visual": {
     "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Total restaurantes"
+                }
+              },
+              "queryRef": "Reseñas.Total restaurantes",
+              "nativeQueryRef": "Total restaurantes",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
     "drillFilterOtherVisuals": true
   }
 }

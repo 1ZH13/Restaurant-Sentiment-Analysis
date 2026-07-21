@@ -11,6 +11,29 @@
   },
   "visual": {
     "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Total reseñas"
+                }
+              },
+              "queryRef": "Reseñas.Total reseñas",
+              "nativeQueryRef": "Total reseñas",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
     "drillFilterOtherVisuals": true
   }
 }

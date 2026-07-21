@@ -120,7 +120,7 @@ table Aspectos
 		lineageTag: 4ef0c039-249d-4924-8fe2-b99e182e2cb7
 
 	/// Restaurantes que acumulan al menos una mención negativa del aspecto seleccionado.
-	measure 'Restaurantes con quejas' = CALCULATE(DISTINCTCOUNT(Reseñas[RestauranteID]), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
+	measure 'Restaurantes con quejas' = CALCULATE(DISTINCTCOUNT('Reseñas'[RestauranteID]), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
 		formatString: #,0
 		displayFolder: 5 Desbalance
 		lineageTag: 087b93aa-2f9f-4fd8-964c-63a534d1f4e7

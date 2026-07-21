@@ -11,6 +11,29 @@
   },
   "visual": {
     "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Variación mensual"
+                }
+              },
+              "queryRef": "Reseñas.Variación mensual",
+              "nativeQueryRef": "Variación mensual",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
     "drillFilterOtherVisuals": true
   }
 }

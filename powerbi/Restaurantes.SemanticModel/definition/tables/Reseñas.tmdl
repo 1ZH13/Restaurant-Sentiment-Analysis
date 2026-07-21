@@ -3,31 +3,31 @@ table Reseñas
 	lineageTag: 7d6e3171-d01f-450b-a1af-d86a3bc470f5
 
 	/// Cantidad de reseñas en el contexto actual.
-	measure 'Total reseñas' = COUNTROWS(Reseñas)
+	measure 'Total reseñas' = COUNTROWS('Reseñas')
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: 101ccb52-df0d-460c-99ad-ca94715901c0
 
 	/// Restaurantes distintos con al menos una reseña en el contexto actual.
-	measure 'Total restaurantes' = DISTINCTCOUNT(Reseñas[RestauranteID])
+	measure 'Total restaurantes' = DISTINCTCOUNT('Reseñas'[RestauranteID])
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: aee6b39b-bc7b-429b-84c7-875d6d2dcc92
 
 	/// Promedio de la calificación que dio cada reseña. Solo Degusta publica este dato.
-	measure 'Calificación promedio' = AVERAGE(Reseñas[CalificaciónReseña])
+	measure 'Calificación promedio' = AVERAGE('Reseñas'[CalificaciónReseña])
 		formatString: 0.00
 		displayFolder: 1 Base
 		lineageTag: dd3be4ba-36f3-408e-bead-6cf4d284c2ee
 
 	/// Cuántas reseñas traen calificación propia. Sirve para declarar la cobertura del promedio.
-	measure 'Reseñas con calificación' = COUNTROWS(FILTER(Reseñas, NOT ISBLANK(Reseñas[CalificaciónReseña])))
+	measure 'Reseñas con calificación' = COUNTROWS(FILTER('Reseñas', NOT ISBLANK('Reseñas'[CalificaciónReseña])))
 		formatString: #,0
 		displayFolder: 1 Base
 		lineageTag: d0442218-6400-402b-9f8c-38ad2e567029
 
 	/// Longitud media de las reseñas en palabras.
-	measure 'Palabras por reseña' = AVERAGE(Reseñas[Palabras])
+	measure 'Palabras por reseña' = AVERAGE('Reseñas'[Palabras])
 		formatString: 0.0
 		displayFolder: 1 Base
 		lineageTag: 4ff1e471-1d74-4ed2-858a-4b3f892af705

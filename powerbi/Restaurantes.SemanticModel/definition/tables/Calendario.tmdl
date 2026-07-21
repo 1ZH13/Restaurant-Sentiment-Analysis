@@ -42,8 +42,8 @@ table Calendario
 	partition Calendario = calculated
 		mode: import
 		source =
-				VAR FechaMinima = MIN(Reseñas[Fecha])
-				VAR FechaMaxima = MAX(Reseñas[Fecha])
+				VAR FechaMinima = MIN('Reseñas'[Fecha])
+				VAR FechaMaxima = MAX('Reseñas'[Fecha])
 				// Si Reseñas todavia no tiene datos cargados, MIN y MAX devuelven vacio
 				// y DATE(YEAR(BLANK()), 1, 1) da una fecha invalida que hace fallar toda
 				// la tabla. Al abrir el proyecto por primera vez, o tras borrar la cache,
