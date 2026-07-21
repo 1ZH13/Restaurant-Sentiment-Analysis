@@ -73,6 +73,46 @@ restaurantes, así que las 5 reseñas de un mismo restaurante eran 5 puntos
 idénticos. Puntos a distancia cero inflan artificialmente la métrica. Corregirlo
 bajó el número y lo volvió real.
 
+### El cluster 3 es un artefacto de datos, no un hallazgo
+
+Los cuatro grupos no tienen tamaños comparables:
+
+| Grupo | Restaurantes | Reseñas | Calificación |
+|---|---|---|---|
+| 0 · Los más comentados | 117 | 591 | 4.38 |
+| 2 · Destacan por la comida | 77 | 382 | 4.62 |
+| 1 · Buena relación precio | 44 | 126 | 4.82 |
+| **3 · Destacan por el ambiente** | **3** | **9** | **1.80** |
+
+Ese grupo de 3 son **exactamente** los tres restaurantes cuya calificación de
+RestaurantGuru no es fiable (ver `src/preprocessing/calidad.py` y la sección de
+limitaciones del README): *Aji de Cali* (1.1), *Sushi Express Punta Pacífica*
+(1.9) y *Donde Stan S.A.* (2.4). No comparten nada real entre ellos salvo el
+defecto: sus reseñas son positivas y su calificación dice lo contrario.
+
+Como la calificación es una de las ocho variables de entrada, K-Means los ve como
+tres puntos aislados en un extremo del espacio y los aparta en su propio grupo. La
+etiqueta *"Destacan por el ambiente"* se genera automáticamente a partir de la
+variable más alta del centroide, así que **no describe nada**: es el nombre que le
+tocó a un grupo que no debería existir.
+
+**Esto también afecta a la elección de _k_.** El número de grupos se elige por
+silhouette, y esos tres puntos aislados empujan la métrica hacia arriba en *k*=4
+(0.1613, frente a 0.1485 en *k*=3). Es decir, el propio *k* está en parte
+determinado por el defecto de datos. Con las calificaciones correctas, lo
+esperable es que esos tres se fundieran en alguno de los otros grupos.
+
+**Por qué no se corrige.** Excluirlos y volver a agrupar daría un modelo más
+limpio, pero regeneraría `restaurants_clustered.csv`, que es la fuente del
+dashboard de Streamlit y del modelo de Power BI. Se documenta en lugar de
+maquillarse: un grupo de 3 elementos sobre 241 no cambia ninguna conclusión del
+análisis, y detectar que existe por un defecto de la fuente es en sí mismo un
+resultado del trabajo de calidad de datos.
+
+**Si preguntan por el cluster 3**, la respuesta corta es: *no es un perfil de
+restaurante, es el residuo de tres calificaciones corruptas de RestaurantGuru que
+detectamos, documentamos y excluimos de los rankings.*
+
 ---
 
 ## 2. Clasificación supervisada de sentimiento

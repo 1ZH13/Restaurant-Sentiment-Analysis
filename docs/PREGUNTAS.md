@@ -233,7 +233,7 @@ Archivo principal:
 
 El proyecto tiene soporte opcional para LLM mediante Google Gemini:
 
-- `src/sentiment/gemini_classifier.py`
+- `src/llm/asistente.py`
 
 Sin embargo, el proyecto funciona por defecto sin API key usando un clasificador lexico en espanol e ingles.
 
@@ -526,11 +526,17 @@ Comida, servicio, precio y ambiente.
 
 ### 23. El proyecto usa LLM obligatoriamente?
 
-No. Funciona por defecto con un clasificador lexico en espanol e ingles. El LLM, como Gemini, es opcional.
+No. El analisis de sentimiento por defecto es lexico y funciona sin ninguna clave
+de API. El LLM (Gemini) esta **implementado y en uso**, pero como capa adicional:
+si falta la clave, el dashboard lo detecta, lo explica y el resto sigue
+funcionando.
 
-### 24. Que ventaja tendria usar un LLM?
+### 24. Que ventaja tiene usar un LLM?
 
-Un LLM puede entender mejor el contexto, sarcasmo o frases complejas.
+Entiende contexto, sarcasmo y frases complejas mejor que un lexico. En este
+proyecto se usa para tres cosas: responder preguntas en lenguaje natural sobre
+los datos, resumir las resenas de un restaurante, y clasificar sentimiento como
+tercer enfoque comparable con los otros dos.
 
 ### 25. Que ventaja tiene el metodo lexico usado por defecto?
 
@@ -542,7 +548,17 @@ Se representa asi: positivo = 1, neutral = 0 y negativo = -1.
 
 ### 27. Que tecnica de Machine Learning se aplico?
 
-Se aplico clustering usando K-Means.
+Tres, y se comparan entre si contra la misma verdad de referencia:
+
+1. **Clustering K-Means** (no supervisado) para agrupar restaurantes por perfil.
+2. **Clasificacion supervisada** con TF-IDF + regresion logistica, para predecir
+   si una resena es positiva o no a partir de su texto.
+3. **Modelo de lenguaje** (Gemini) como tercer enfoque de clasificacion, ademas
+   de su uso para consultas en lenguaje natural.
+
+La verdad de referencia es la calificacion en estrellas que puso el propio
+resenador, que ninguno de los tres ve. El detalle completo, con la justificacion
+de cada eleccion, esta en [MODELOS.md](MODELOS.md).
 
 ### 28. Que es clustering?
 
@@ -578,7 +594,10 @@ Porque permite crear dashboards rapidamente, integrandose bien con pandas, Plotl
 
 ### 36. Que muestra el dashboard?
 
-Muestra metricas generales, comparaciones entre restaurantes, analisis de sentimiento, clusters, recomendaciones y detalle individual.
+Siete paginas: metricas generales (Resumen), comparacion entre restaurantes,
+analisis de sentimiento por aspecto, agrupamiento, recomendaciones, detalle
+individual y un asistente con LLM para preguntar en lenguaje natural. El recorrido
+completo esta en [DASHBOARD.md](DASHBOARD.md).
 
 ### 37. El dashboard calcula todo desde cero?
 
@@ -634,7 +653,7 @@ En `src/recommendation/recommender.py`.
 
 ### 50. Donde esta el analisis de sentimiento?
 
-En `src/sentiment/fallback_classifier.py` y opcionalmente en `src/sentiment/gemini_classifier.py`.
+En `src/sentiment/fallback_classifier.py` y opcionalmente en `src/llm/asistente.py`.
 
 ### 51. Cual es la mayor limitacion del proyecto?
 
@@ -681,3 +700,210 @@ Este proyecto demuestra como integrar varias areas de ciencia de datos y desarro
 - Sistema de recomendacion.
 
 La plataforma permite transformar resenas dispersas en informacion util para comparar restaurantes y tomar mejores decisiones.
+
+---
+
+# Parte 2 — Continuacion del parcial
+
+Preguntas sobre los componentes anadidos despues: modelo supervisado, LLM,
+Power BI y calidad de datos.
+
+## Modelo supervisado
+
+### 59. Que es TF-IDF?
+
+Una forma de convertir texto en numeros. Cada palabra recibe un peso que sube
+cuanto mas aparece en una resena, y baja cuanto mas comun es en todo el conjunto.
+Asi, palabras como "el" o "restaurante" pesan poco, y palabras distintivas como
+"pesimo" o "espectacular" pesan mucho.
+
+### 60. Por que regresion logistica y no una red neuronal?
+
+Con 973 resenas etiquetadas, una red neuronal se sobreajustaria. La regresion
+logistica es adecuada al tamano del conjunto, entrena en segundos y —lo mas
+importante para un trabajo academico— es **interpretable**: se pueden mostrar las
+palabras que mas empujan hacia cada clase.
+
+### 61. De donde salen las etiquetas para entrenar?
+
+De la calificacion en estrellas que puso el propio resenador. El modelo solo ve el
+**texto**; la nota se usa como verdad de referencia. Eso permite medir los tres
+enfoques con la misma vara.
+
+### 62. Por que binario (positiva / no positiva) y no tres clases?
+
+Porque la clase intermedia es minoritaria y difusa, y separarla no aportaba: el
+modelo se confundia entre neutral y negativa sin ganar nada util. La explicacion
+completa esta en [MODELOS.md](MODELOS.md).
+
+### 63. Por que la exactitud no es la metrica principal?
+
+Porque el 87% de las resenas son positivas: un modelo que responda siempre
+"positiva" acierta el 87% y no sirve de nada. Por eso se reportan precision,
+exhaustividad y F1 de la clase minoritaria, que es la dificil y la util.
+
+### 64. Que resultado da el modelo?
+
+F1 macro de **0.713 ± 0.020** en validacion cruzada de 5 particiones, frente a
+**0.618** del lexico. AUC de 0.794.
+
+### 65. Sobre una particion de prueba el modelo parece peor que el lexico. Por que?
+
+Esa particion tiene solo 32 casos de la clase minoritaria, asi que mover tres
+aciertos cambia el F1 varios puntos. Los dos numeros no se contradicen: muestran
+varianza. La cifra a mirar es la validacion cruzada, que promedia cinco
+particiones distintas.
+
+### 66. Que aprendio el modelo?
+
+Empujan hacia positiva: *excelente, deliciosa, recomendado, delicioso, recomiendo,
+super*. Empujan hacia no positiva: *no, nada, mala, hora, embargo, pedir*. Tiene
+sentido: "no" y "nada" son marcadores de negacion, y "hora" aparece en quejas
+sobre tiempos de espera.
+
+## Modelo de lenguaje (LLM)
+
+### 67. Que modelo se usa y por que?
+
+Gemini de Google, por su capa gratuita. El modelo concreto se configura en el
+`.env`; actualmente `gemini-3.5-flash`. Google retira modelos sin aviso, asi que
+el proyecto incluye `python -m src.llm.modelos_disponibles` para comprobar cual
+sigue funcionando.
+
+### 68. El LLM ve las 1108 resenas?
+
+No. Recibe un **contexto compacto** de unos 1300 caracteres con los agregados que
+el proyecto ya calcula: totales, sentimiento por aspecto, mejores y peores
+restaurantes, cocinas, zonas, precios y grupos. Mandarle todas las resenas no
+cabria y saldria caro.
+
+### 69. Como se evita que invente cifras?
+
+El *prompt* le indica que use unicamente el contexto entregado, que no recurra a
+conocimiento general sobre restaurantes, y que si la respuesta no esta en los
+datos **diga que dato faltaria** en lugar de estimarla. Ademas, la pagina muestra
+el contexto exacto que recibio, de modo que cualquiera puede verificar de donde
+sale una respuesta.
+
+### 70. Como saben que ese guardarrail funciona?
+
+Se probo en vivo. A la pregunta sobre cuantos restaurantes veganos hay y cual es
+su facturacion, respondio que no era posible con los datos disponibles y enumero
+los dos datos que faltarian, en vez de inventarlos.
+
+### 71. Que pasa si no hay clave de API?
+
+La pagina del asistente lo detecta, explica como obtener la clave y aclara que el
+resto del proyecto funciona sin ella. No se rompe nada.
+
+## Power BI y modelo estrella
+
+### 72. Que es un modelo estrella?
+
+Un diseno donde las tablas de **hechos** (los eventos medibles) apuntan
+directamente a las tablas de **dimension** (el contexto descriptivo), sin que una
+dimension cuelgue de otra. Simplifica las consultas y evita ambiguedades.
+
+### 73. Cual es el modelo estrella de este proyecto?
+
+Dos tablas de hechos, `Resenas` (1108 filas) y `Aspectos` (4432 filas), sobre tres
+dimensiones: `Restaurantes` (241), `Calendario` y `Aspecto` (4). `Restaurantes` y
+`Calendario` son **dimensiones conformadas**: las comparten ambas tablas de
+hechos, de modo que un segmentador filtra las dos a la vez.
+
+### 74. Por que Aspectos tiene 4432 filas?
+
+Porque esta **despivotada**: 1108 resenas x 4 aspectos. En el CSV el sentimiento
+viene en columnas separadas; convertirlas en filas permite usar el aspecto como un
+campo mas (eje, leyenda, segmentador) y que una sola medida sirva para los cuatro.
+
+### 75. Por que existe una dimension Aspecto de solo 4 filas?
+
+Por tres razones: fijar el orden logico (Comida, Servicio, Precio, Ambiente) en
+vez del alfabetico; que los segmentadores lean 4 filas en lugar de recorrer 4432;
+y tener donde documentar que significa cada aspecto.
+
+### 76. Por que hace falta una tabla Calendario?
+
+Las funciones de inteligencia de tiempo de DAX exigen una tabla de fechas
+**continua**, un dia por fila. La columna de fecha de las resenas tiene huecos.
+Sin Calendario, la mitad de las medidas temporales no se podrian escribir.
+
+### 77. Cuantos KPIs tiene el modelo?
+
+**30 medidas DAX**, en cinco carpetas: base, sentimiento, tiempo, comparacion y
+desbalance. Todas estan documentadas con su codigo en
+[CONSTRUCCION.md](../powerbi/CONSTRUCCION.md#6-las-30-medidas-dax).
+
+### 78. Cual es la medida mas importante y por que?
+
+`Sentimiento promedio`, por su filtro `Mencionado = TRUE()`. Si una resena no habla
+del precio, su puntaje es 0; promediar esos ceros arrastraria todo hacia el centro
+y pareceria que el precio genera indiferencia, cuando en realidad no se menciona.
+El filtro hace que el promedio se calcule solo sobre quien opino.
+
+### 79. Que hace ALLEXCEPT en las medidas de comparacion?
+
+Quita todos los filtros de `Restaurantes` **excepto** el de cocina (o zona). Asi,
+estando en la fila de un restaurante, calcula el sentimiento de todos los que
+comparten su cocina. Permite responder si esta por encima o por debajo de sus
+pares, que es mas util que su sentimiento absoluto.
+
+### 80. Por que Power BI si ya existe el dashboard?
+
+Porque hacen cosas distintas. Streamlit **produce** el analisis (NLP, ML,
+recomendador); Power BI **explora** ese resultado en ejes que el dashboard no
+cubre: evolucion temporal, comparacion contra un referente, ranking dinamico y
+descomposicion interactiva. El dashboard no tiene ninguna grafica temporal y el
+conjunto abarca de 2019 a 2026.
+
+### 81. Que es el arbol de descomposicion?
+
+Un visual interactivo que arranca colapsado en un total (80 menciones negativas) y
+se va abriendo por los campos que uno elija: zona, cocina, banda de precio o
+aspecto. En vez de fijar una jerarquia de antemano, deja que quien mira decida el
+camino.
+
+## Calidad de datos
+
+### 82. Cual es el problema con las calificaciones de RestaurantGuru?
+
+La fuente publica en su JSON-LD un `aggregateRating` que contradice el que muestra
+en su propia web. La ficha de *Aji de Cali* muestra 4.6/5 y su dato estructurado
+declara 1.1. El scraper lee el JSON-LD, asi que copio un dato que la fuente se
+contradice.
+
+### 83. Como lo detectaron?
+
+Por una incoherencia: el resumen que genero el LLM de *Aji de Cali* era
+entusiasta, pero figuraba como el peor calificado del conjunto. Al revisar, las
+resenas eran positivas. Se contrasto contra la web de la fuente y se confirmo la
+contradiccion.
+
+### 84. Por que no lo corrigen?
+
+Porque no hay forma de recuperar el valor bueno sin volver a scrapear, y la fuente
+limita agresivamente. Se **detecta** con `src/preprocessing/calidad.py`, se
+excluyen esos restaurantes de los rankings, la interfaz avisa, y las pruebas fijan
+el numero en 3 para que un nuevo scrape que introduzca mas casos falle en vez de
+pasar desapercibido.
+
+### 85. Que es el cluster 3?
+
+No es un perfil de restaurante: son exactamente esos tres restaurantes con
+calificacion corrupta. Como la calificacion es una de las ocho variables del
+clustering, K-Means los aparta en su propio grupo. Esta explicado en
+[MODELOS.md](MODELOS.md).
+
+### 86. Cuantas pruebas tiene el proyecto?
+
+263. Incluyen un archivo, `test_documentacion.py`, que verifica que la
+**documentacion** no se desincronice del codigo: que las cifras del README sean
+las reales, que las 30 medidas DAX esten documentadas y que no se documente
+ninguna que no exista.
+
+### 87. Por que hay pruebas sobre la documentacion?
+
+Por un defecto real: el README declaraba "997 resenas de 207 restaurantes" cuando
+el conjunto ya tenia 1108 y 241. Nadie se dio cuenta porque ninguna prueba miraba
+la documentacion.

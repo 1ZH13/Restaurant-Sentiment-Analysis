@@ -1,5 +1,13 @@
 # PRD - Plataforma de Análisis de Reseñas de Restaurantes en Panamá
 
+> **Documento historico.** Es la planificacion original del proyecto, anterior a
+> la implementacion. Se conserva como registro de lo que se propuso, pero **no
+> describe el estado actual**: partes de lo aqui planteado se resolvieron de otra
+> forma. Para la documentacion vigente ver [README.md](README.md) y la carpeta
+> [docs/](docs/).
+
+
+
 **Grupo:** 5
 **Proyecto:** Restaurant Sentiment Analysis Platform
 **Fecha:** 14 de Junio de 2026
