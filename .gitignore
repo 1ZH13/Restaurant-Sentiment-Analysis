@@ -52,3 +52,9 @@ Thumbs.db
 
 # Streamlit
 .streamlit/
+
+# Power BI project (.pbip): la definicion en TMDL/JSON si se versiona, pero la
+# cache de datos y los ajustes de cada maquina no.
+**/.pbi/localSettings.json
+**/.pbi/editorSettings.json
+**/.pbi/cache.abf

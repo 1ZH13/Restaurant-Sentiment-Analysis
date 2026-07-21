@@ -1,0 +1,12 @@
+relationship Restaurantes_Reseñas
+	fromColumn: Reseñas.RestauranteID
+	toColumn: Restaurantes.RestauranteID
+
+relationship Reseñas_Aspectos
+	fromColumn: Aspectos.ReseñaID
+	toColumn: Reseñas.ReseñaID
+
+relationship Calendario_Reseñas
+	fromColumn: Reseñas.Fecha
+	toColumn: Calendario.Date
+

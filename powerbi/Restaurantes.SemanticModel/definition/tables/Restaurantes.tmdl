@@ -1,0 +1,75 @@
+/// Una fila por restaurante. Dimension principal del modelo.
+table Restaurantes
+	lineageTag: 202550ef-3da6-485a-8761-5c3a93b17e3f
+
+	column RestauranteID
+		dataType: string
+		lineageTag: c6778e14-4c30-4460-9eae-a396a279d3ba
+		sourceColumn: RestauranteID
+
+	column Restaurante
+		dataType: string
+		lineageTag: 58920810-b237-4347-917f-6d6936c495c6
+		sourceColumn: Restaurante
+
+	column Cocina
+		dataType: string
+		lineageTag: ebb44279-c75b-469f-9498-4bf59f2f2e4d
+		sourceColumn: Cocina
+
+	column CocinaPrincipal
+		dataType: string
+		lineageTag: 83d0ec89-a9f4-4124-a567-e66a9892c79a
+		sourceColumn: CocinaPrincipal
+
+	column Zona
+		dataType: string
+		lineageTag: 2203a1b8-84d2-42d4-a841-dfbd87f1aa68
+		sourceColumn: Zona
+
+	column Dirección
+		dataType: string
+		lineageTag: b1c276b0-23af-448e-98cf-fd7fd7a5065b
+		sourceColumn: Dirección
+
+	column BandaPrecio
+		dataType: string
+		lineageTag: 8affda8b-a6ee-44f5-a7b7-a9a97345ed50
+		sourceColumn: BandaPrecio
+
+	column NivelPrecio
+		dataType: double
+		lineageTag: 984aac06-2335-4bf8-a69d-c9ebf17d626f
+		sourceColumn: NivelPrecio
+
+	column Calificación
+		dataType: double
+		lineageTag: 25d90815-a4a5-440d-aef5-69a3f8dc5441
+		sourceColumn: Calificación
+
+	column GrupoID
+		dataType: int64
+		lineageTag: e535b9cf-a662-48b2-8693-39a495fcfa57
+		sourceColumn: GrupoID
+
+	column Grupo
+		dataType: string
+		lineageTag: a0b814cf-39b4-463e-b35d-8327ca54b8c1
+		sourceColumn: Grupo
+
+	column Fuente
+		dataType: string
+		lineageTag: 74fb3516-6fbd-49d9-baa5-07ba5e8ac5a1
+		sourceColumn: Fuente
+
+	partition Restaurantes = m
+		mode: import
+		source =
+				let
+				    Columnas = Table.SelectColumns(DatosProcesados, {"restaurant_id", "restaurant_name", "category", "category_primary", "location", "address", "price_band", "price_level", "overall_rating", "cluster", "cluster_name", "source"}),
+				    Unicos = Table.Distinct(Columnas, {"restaurant_id"}),
+				    Renombrado = Table.RenameColumns(Unicos, {{"restaurant_id", "RestauranteID"}, {"restaurant_name", "Restaurante"}, {"category", "Cocina"}, {"category_primary", "CocinaPrincipal"}, {"location", "Zona"}, {"address", "Dirección"}, {"price_band", "BandaPrecio"}, {"price_level", "NivelPrecio"}, {"overall_rating", "Calificación"}, {"cluster", "GrupoID"}, {"cluster_name", "Grupo"}, {"source", "Fuente"}}),
+				    Tipos = Table.TransformColumnTypes(Renombrado, {{"Calificación", type number}, {"NivelPrecio", type number}, {"GrupoID", Int64.Type}})
+				in
+				    Tipos
+

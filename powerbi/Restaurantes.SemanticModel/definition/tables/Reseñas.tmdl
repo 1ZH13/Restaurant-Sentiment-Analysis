@@ -1,0 +1,133 @@
+/// Una fila por resena. Tabla de hechos principal.
+table Reseñas
+	lineageTag: 7d6e3171-d01f-450b-a1af-d86a3bc470f5
+
+	/// Cantidad de resenas en el contexto actual.
+	measure 'Total reseñas' = COUNTROWS(Reseñas)
+		formatString: #,0
+		displayFolder: 1 Base
+		lineageTag: 101ccb52-df0d-460c-99ad-ca94715901c0
+
+	/// Restaurantes distintos con al menos una resena en el contexto actual.
+	measure 'Total restaurantes' = DISTINCTCOUNT(Reseñas[RestauranteID])
+		formatString: #,0
+		displayFolder: 1 Base
+		lineageTag: aee6b39b-bc7b-429b-84c7-875d6d2dcc92
+
+	/// Promedio de la calificacion que dio cada resena. Solo Degusta publica este dato.
+	measure 'Calificación promedio' = AVERAGE(Reseñas[CalificaciónReseña])
+		formatString: 0.00
+		displayFolder: 1 Base
+		lineageTag: dd3be4ba-36f3-408e-bead-6cf4d284c2ee
+
+	/// Cuantas resenas traen calificacion propia. Sirve para declarar la cobertura del promedio.
+	measure 'Reseñas con calificación' = COUNTROWS(FILTER(Reseñas, NOT ISBLANK(Reseñas[CalificaciónReseña])))
+		formatString: #,0
+		displayFolder: 1 Base
+		lineageTag: d0442218-6400-402b-9f8c-38ad2e567029
+
+	/// Longitud media de las resenas en palabras.
+	measure 'Palabras por reseña' = AVERAGE(Reseñas[Palabras])
+		formatString: 0.0
+		displayFolder: 1 Base
+		lineageTag: 4ff1e471-1d74-4ed2-858a-4b3f892af705
+
+	/// Reseñas del mes previo. Requiere la tabla Calendario marcada como tabla de fechas.
+	measure 'Reseñas mes anterior' = CALCULATE([Total reseñas], DATEADD(Calendario[Date], -1, MONTH))
+		formatString: #,0
+		displayFolder: 3 Tiempo
+		lineageTag: f6687434-4477-4190-a9ce-d3a36d4c8533
+
+	/// Crecimiento porcentual de resenas respecto al mes anterior.
+	measure 'Variación mensual' =
+			VAR Actual = [Total reseñas]
+			VAR Previo = [Reseñas mes anterior]
+			RETURN IF(NOT ISBLANK(Previo) && Previo <> 0, DIVIDE(Actual - Previo, Previo))
+		formatString: 0.0%
+		displayFolder: 3 Tiempo
+		lineageTag: 9f0190a1-9a91-4a84-88c6-94960fdeae8c
+
+	/// Mismo periodo del ano anterior, para comparar estacionalidad.
+	measure 'Reseñas año anterior' = CALCULATE([Total reseñas], SAMEPERIODLASTYEAR(Calendario[Date]))
+		formatString: #,0
+		displayFolder: 3 Tiempo
+		lineageTag: 7cc7b0c4-2bf9-4189-bacb-ab3ea8cc0ba2
+
+	/// Total acumulado hasta la fecha del contexto. Muestra como fue creciendo el dataset.
+	measure 'Reseñas acumuladas' = CALCULATE([Total reseñas], FILTER(ALL(Calendario), Calendario[Date] <= MAX(Calendario[Date])))
+		formatString: #,0
+		displayFolder: 3 Tiempo
+		lineageTag: d8ea027b-def6-4756-b349-3b248c0b9fd9
+
+	/// Suaviza la serie mensual para ver la tendencia sin el ruido de meses sueltos.
+	measure 'Media móvil 3 meses' = AVERAGEX(DATESINPERIOD(Calendario[Date], MAX(Calendario[Date]), -3, MONTH), [Total reseñas])
+		formatString: 0.0
+		displayFolder: 3 Tiempo
+		lineageTag: a74df70b-484b-4d21-980b-e881a7f66e4e
+
+	/// Peso de la categoria dentro de lo que el usuario tiene seleccionado.
+	measure '% del total de reseñas' = DIVIDE([Total reseñas], CALCULATE([Total reseñas], ALLSELECTED()))
+		formatString: 0.0%
+		displayFolder: 4 Comparacion
+		lineageTag: 54f59f0f-9565-4b96-b325-22480f9fe8e8
+
+	column ReseñaID
+		dataType: int64
+		lineageTag: 398bd9e2-aa3d-4c45-8d02-ea307d132344
+		sourceColumn: ReseñaID
+
+	column RestauranteID
+		dataType: string
+		lineageTag: ce3b2785-9456-4c3f-a211-7c1218181eda
+		sourceColumn: RestauranteID
+
+	column Fecha
+		dataType: dateTime
+		lineageTag: ff2942cb-3bca-41ec-81a9-07c257ce8f9d
+		sourceColumn: Fecha
+
+	column CalificaciónReseña
+		dataType: double
+		lineageTag: 057ecc11-0c44-473a-a3fb-6cbee54be0ec
+		sourceColumn: CalificaciónReseña
+
+	column Texto
+		dataType: string
+		lineageTag: ce56e83c-1e61-4d7e-8d32-0106813c28d0
+		sourceColumn: Texto
+
+	column Autor
+		dataType: string
+		lineageTag: 67a29950-fe97-424a-8516-3070309b1ad4
+		sourceColumn: Autor
+
+	column Fuente
+		dataType: string
+		lineageTag: b6cc323c-f728-4fb0-bee5-45ec12a17716
+		sourceColumn: Fuente
+
+	column Idioma
+		dataType: string
+		lineageTag: 6b33645b-affc-4826-883a-704379d4e385
+		sourceColumn: Idioma
+
+	column Palabras
+		dataType: int64
+		lineageTag: 8482a47a-4d83-42a7-b711-b9d0973e2c0a
+		sourceColumn: Palabras
+
+	column Caracteres
+		dataType: int64
+		lineageTag: d8884991-7d97-47f7-a308-1b7f3f3d2ca1
+		sourceColumn: Caracteres
+
+	partition Reseñas = m
+		mode: import
+		source =
+				let
+				    Columnas = Table.SelectColumns(DatosProcesados, {"ReseñaID", "restaurant_id", "review_date", "review_rating", "review_text", "reviewer_name", "source", "review_language", "word_count", "char_count"}),
+				    Renombrado = Table.RenameColumns(Columnas, {{"restaurant_id", "RestauranteID"}, {"review_date", "Fecha"}, {"review_rating", "CalificaciónReseña"}, {"review_text", "Texto"}, {"reviewer_name", "Autor"}, {"source", "Fuente"}, {"review_language", "Idioma"}, {"word_count", "Palabras"}, {"char_count", "Caracteres"}}),
+				    Tipos = Table.TransformColumnTypes(Renombrado, {{"Fecha", type date}, {"CalificaciónReseña", type number}, {"Palabras", Int64.Type}, {"Caracteres", Int64.Type}})
+				in
+				    Tipos
+

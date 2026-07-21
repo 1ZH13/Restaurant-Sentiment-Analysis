@@ -195,7 +195,7 @@ restaurant-sentiment-analysis/
 │   │   └── i18n.py
 │   └── views/                     # 6 páginas (render(df))
 ├── powerbi/
-│   ├── modelo.tmdl                # el modelo en texto, revisable en git
+│   ├── Restaurantes.pbip          # proyecto de Power BI (modelo + informe en texto)
 │   └── POWERBI.md                 # documentación del modelo y sus medidas
 ├── tests/                         # pruebas unitarias + de dashboard + e2e
 ├── run_pipeline.py                # pipeline ETL+ML en un comando

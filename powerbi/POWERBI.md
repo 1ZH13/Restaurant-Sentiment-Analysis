@@ -3,11 +3,11 @@
 Documentación del componente de Business Intelligence del proyecto: qué contiene
 el modelo, por qué está armado así, y cómo trabajar con él.
 
-> **Estado actual:** el modelo (tablas, relaciones y las 30 medidas DAX) está
-> construido y verificado, y su definición está en `modelo.tmdl`. Lo que falta es
-> el archivo `Restaurantes.pbix` con los visuales armados: las secciones 2 y 5 de
-> este documento describen cómo abrirlo y qué construir. Mientras el `.pbix` no
-> esté en el repositorio, el modelo puede reproducirse desde `modelo.tmdl`.
+> **Cómo se trabaja este proyecto:** el entregable es
+> **`Restaurantes.pbip`**, un *proyecto* de Power BI. A diferencia del `.pbix`
+> (binario), guarda el modelo y el informe como archivos de texto —TMDL y JSON—
+> que **sí se pueden revisar y comparar en un pull request**. Ábrelo con
+> Power BI Desktop igual que cualquier informe.
 
 ---
 
@@ -39,10 +39,10 @@ exactamente lo que Power BI hace mejor.
 
 ## 2. Cómo abrir el modelo
 
-1. Abrí `powerbi/Restaurantes.pbix` en Power BI Desktop.
-2. **Cambiá la ruta de los datos** (cada quien tiene el repo en otro lugar):
+1. Abre `powerbi/Restaurantes.pbip` en Power BI Desktop.
+2. **Cambia la ruta de los datos** (cada quien tiene el repo en otro lugar):
    - *Inicio → Transformar datos → Administrar parámetros*
-   - Editá `RutaDatos` y poné la carpeta `data/processed` de **tu** copia del repo.
+   - Edita `RutaDatos` y pon la carpeta `data/processed` de **tu** copia del repo.
      Ejemplo: `C:\Users\TuUsuario\Documentos\Restaurant-Sentiment-Analysis\data\processed`
    - Cerrar y aplicar.
 3. *Inicio → Actualizar*.
@@ -64,7 +64,7 @@ Esquema en estrella con una tabla de hechos principal:
                          │
                          ▼ *
 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│ Restaurantes │──►│   Resenas    │◄──│   Aspectos   │
+│ Restaurantes │──►│   Reseñas    │◄──│   Aspectos   │
 │  241 filas   │ 1 │  1108 filas  │ 1 │  4432 filas  │
 └──────────────┘  *└──────────────┘  *└──────────────┘
 ```
@@ -75,15 +75,15 @@ Una fila por restaurante. Sale de deduplicar el CSV por `restaurant_id`, que ya
 es un **id canónico**: si el mismo local aparece en Degusta y en RestaurantGuru,
 el pipeline de Python lo unificó antes.
 
-Campos: `Restaurante`, `Cocina`, `CocinaPrincipal`, `Zona`, `Direccion`,
-`BandaPrecio`, `NivelPrecio`, `Calificacion`, `Grupo` (nombre del cluster),
+Campos: `Restaurante`, `Cocina`, `CocinaPrincipal`, `Zona`, `Dirección`,
+`BandaPrecio`, `NivelPrecio`, `Calificación`, `Grupo` (nombre del cluster),
 `GrupoID`, `Fuente`.
 
-### `Resenas` — hechos (1108 filas)
+### `Reseñas` — hechos (1108 filas)
 
-Una fila por reseña, con `ResenaID` agregado como índice.
+Una fila por reseña, con `ReseñaID` agregado como índice.
 
-Campos: `Fecha`, `CalificacionResena`, `Texto`, `Autor`, `Fuente`, `Idioma`,
+Campos: `Fecha`, `CalificaciónReseña`, `Texto`, `Autor`, `Fuente`, `Idioma`,
 `Palabras`, `Caracteres`.
 
 ### `Aspectos` — hechos despivotados (4432 filas = 1108 × 4)
@@ -96,7 +96,7 @@ ese formato no se puede poner "Aspecto" en un eje ni usarlo como segmentador.
 
 Al despivotar queda una fila por reseña **y** aspecto:
 
-| ResenaID | Aspecto | Sentimiento | Puntaje | Mencionado |
+| ReseñaID | Aspecto | Sentimiento | Puntaje | Mencionado |
 |---|---|---|---|---|
 | 1 | Comida | Positivo | 1 | ✔ |
 | 1 | Servicio | Neutral | 0 | ✔ |
@@ -124,11 +124,11 @@ inteligencia de tiempo.
 
 | Desde | Hacia | Cardinalidad |
 |---|---|---|
-| `Resenas[RestauranteID]` | `Restaurantes[RestauranteID]` | * : 1 |
-| `Aspectos[ResenaID]` | `Resenas[ResenaID]` | * : 1 |
-| `Resenas[Fecha]` | `Calendario[Date]` | * : 1 |
+| `Reseñas[RestauranteID]` | `Restaurantes[RestauranteID]` | * : 1 |
+| `Aspectos[ReseñaID]` | `Reseñas[ReseñaID]` | * : 1 |
+| `Reseñas[Fecha]` | `Calendario[Date]` | * : 1 |
 
-`Aspectos` se conecta a `Restaurantes` **a través de** `Resenas`, no directo. Si
+`Aspectos` se conecta a `Restaurantes` **a través de** `Reseñas`, no directo. Si
 tuviera las dos relaciones se formaría un camino ambiguo y Power BI no sabría por
 cuál filtrar.
 
@@ -142,11 +142,11 @@ Organizadas en carpetas dentro del panel de campos.
 
 | Medida | Qué hace |
 |---|---|
-| `Total resenas` | Reseñas en el contexto actual |
+| `Total reseñas` | Reseñas en el contexto actual |
 | `Total restaurantes` | Restaurantes distintos con reseñas |
-| `Calificacion promedio` | Promedio de la nota que dio cada reseña |
-| `Resenas con calificacion` | Cuántas traen nota propia (para declarar cobertura) |
-| `Palabras por resena` | Longitud media |
+| `Calificación promedio` | Promedio de la nota que dio cada reseña |
+| `Reseñas con calificación` | Cuántas traen nota propia (para declarar cobertura) |
+| `Palabras por reseña` | Longitud media |
 
 ### 2 Sentimiento
 
@@ -157,17 +157,17 @@ Organizadas en carpetas dentro del panel de campos.
 | `Cobertura de menciones` | Qué % de reseñas lo mencionan |
 | `Menciones positivas` / `negativas` | Conteos por signo |
 | `% positivas` / `% negativas` | Proporción sobre las menciones |
-| `Saldo de opinion` | `% positivas − % negativas` |
+| `Saldo de opinión` | `% positivas − % negativas` |
 
 ### 3 Tiempo — *lo que Streamlit no tiene*
 
 | Medida | Qué hace |
 |---|---|
-| `Resenas mes anterior` | Mes previo, con `DATEADD` |
-| `Variacion mensual` | Crecimiento % contra el mes anterior |
-| `Resenas ano anterior` | Mismo periodo del año pasado (`SAMEPERIODLASTYEAR`) |
-| `Resenas acumuladas` | Total acumulado hasta la fecha |
-| `Media movil 3 meses` | Suaviza la serie para ver tendencia |
+| `Reseñas mes anterior` | Mes previo, con `DATEADD` |
+| `Variación mensual` | Crecimiento % contra el mes anterior |
+| `Reseñas año anterior` | Mismo periodo del año pasado (`SAMEPERIODLASTYEAR`) |
+| `Reseñas acumuladas` | Total acumulado hasta la fecha |
+| `Media móvil 3 meses` | Suaviza la serie para ver tendencia |
 | `Sentimiento mes anterior` | Sentimiento del mes previo |
 | `Cambio de sentimiento` | Si la percepción mejora o empeora |
 
@@ -179,7 +179,7 @@ Organizadas en carpetas dentro del panel de campos.
 | `Diferencia vs su cocina` | Cuánto se despega de sus pares. Positivo = mejor |
 | `Sentimiento de su zona` / `Diferencia vs su zona` | Lo mismo por barrio |
 | `Ranking por sentimiento` | Posición con `RANKX`, recalculada según lo filtrado |
-| `% del total de resenas` | Peso dentro de la selección |
+| `% del total de reseñas` | Peso dentro de la selección |
 
 ### 5 Desbalance — *detectar restaurantes desparejos*
 
@@ -205,11 +205,11 @@ Las tres evitan deliberadamente repetir lo que ya está en Streamlit.
 
 | Visual | Campos |
 |---|---|
-| Gráfico de líneas | Eje `Calendario[AnoMes]` · Valores `Total resenas` y `Media movil 3 meses` |
-| Gráfico de área | Eje `Calendario[AnoMes]` · Valor `Resenas acumuladas` |
-| Líneas | Eje `Calendario[AnoMes]` · Valor `Sentimiento promedio` · Leyenda `Aspectos[Aspecto]` |
-| Tarjetas | `Total resenas`, `Variacion mensual`, `Cambio de sentimiento` |
-| Segmentadores | `Calendario[Ano]`, `Restaurantes[CocinaPrincipal]`, `Aspectos[Aspecto]` |
+| Gráfico de líneas | Eje `Calendario[AñoMes]` · Valores `Total reseñas` y `Media móvil 3 meses` |
+| Gráfico de área | Eje `Calendario[AñoMes]` · Valor `Reseñas acumuladas` |
+| Líneas | Eje `Calendario[AñoMes]` · Valor `Sentimiento promedio` · Leyenda `Aspectos[Aspecto]` |
+| Tarjetas | `Total reseñas`, `Variación mensual`, `Cambio de sentimiento` |
+| Segmentadores | `Calendario[Año]`, `Restaurantes[CocinaPrincipal]`, `Aspectos[Aspecto]` |
 
 > **Ojo al interpretar:** Degusta solo publica las 5 reseñas más recientes de cada
 > restaurante, así que los meses recientes concentran casi todo el volumen. La
@@ -223,7 +223,7 @@ Las tres evitan deliberadamente repetir lo que ya está en Streamlit.
 | Visual | Campos |
 |---|---|
 | Matriz | Filas `Restaurantes[Restaurante]` · Valores `Sentimiento promedio`, `Sentimiento de su cocina`, `Diferencia vs su cocina`, `Ranking por sentimiento` |
-| Gráfico de dispersión | X `Diferencia vs su cocina` · Y `Total resenas` · Detalles `Restaurante` |
+| Gráfico de dispersión | X `Diferencia vs su cocina` · Y `Total reseñas` · Detalles `Restaurante` |
 | Barras | `Restaurante` ordenado por `Diferencia vs su cocina` (arriba y abajo) |
 | Matriz | Filas `Restaurantes[Zona]` · Columnas `Aspectos[Aspecto]` · Valor `Sentimiento promedio`, con formato condicional |
 
@@ -236,9 +236,9 @@ La última matriz es **zona × aspecto**; el mapa de calor de Streamlit es
 
 | Visual | Campos |
 |---|---|
-| Tabla | `Restaurante`, `Mejor aspecto`, `Peor aspecto`, `Brecha entre aspectos`, `Total resenas` |
+| Tabla | `Restaurante`, `Mejor aspecto`, `Peor aspecto`, `Brecha entre aspectos`, `Total reseñas` |
 | Barras | Eje `Aspectos[Aspecto]` · Valor `% negativas` |
-| Matriz | Filas `CocinaPrincipal` · Columnas `Aspecto` · Valor `Saldo de opinion` |
+| Matriz | Filas `CocinaPrincipal` · Columnas `Aspecto` · Valor `Saldo de opinión` |
 | **Árbol de descomposición** | Analizar `Menciones negativas` · Explicar por `Zona`, `CocinaPrincipal`, `BandaPrecio`, `Aspecto` |
 | **Influenciadores clave** | Analizar `Aspectos[Sentimiento]` · Explicar por `BandaPrecio`, `Zona`, `CocinaPrincipal`, `Fuente` |
 | Tarjetas | `Restaurantes con quejas`, `Cobertura de menciones` |
@@ -263,15 +263,21 @@ de Power BI**: no se pueden reproducir en Streamlit sin programarlos a mano.
 
 ## 7. Archivos
 
-| Archivo | Qué es |
+| Archivo / carpeta | Qué es |
 |---|---|
-| `powerbi/Restaurantes.pbix` | El informe. Binario: **no se puede revisar en un pull request**. *Pendiente de agregar* |
-| `powerbi/modelo.tmdl` | El mismo modelo en texto. Sí se puede revisar y comparar en git |
-| `powerbi/POWERBI.md` | Este documento |
+| `Restaurantes.pbip` | **El entregable.** Se abre con Power BI Desktop |
+| `Restaurantes.SemanticModel/definition/` | El modelo en TMDL: una tabla por archivo, más relaciones y expresiones |
+| `Restaurantes.Report/definition/` | El informe en JSON: una carpeta por página y una por visual |
+| `Restaurantes.pbix` | Copia en formato clásico, por si alguien prefiere abrir un solo archivo |
+| `POWERBI.md` | Este documento |
 
-El `.tmdl` se regenera exportando el modelo desde Power BI Desktop
-(*Inicio → Modelo → Exportar*) o con herramientas externas. Conviene actualizarlo
-cuando se agreguen medidas, para que los cambios queden visibles en git.
+Se versiona el `.pbip` y no un `.tmdl` suelto a propósito: tener el modelo en dos
+lugares garantiza que tarde o temprano queden desincronizados. La carpeta
+`SemanticModel/definition/` **es** la definición del modelo, así que basta con
+mirar ahí.
+
+Los archivos de `.pbi/` (caché de datos y ajustes de cada máquina) están
+excluidos en `.gitignore`.
 
 ---
 
@@ -281,7 +287,7 @@ cuando se agreguen medidas, para que los cambios queden visibles en git.
   existe el parámetro `RutaDatos`. Cada integrante debe ajustarlo una vez.
 - **El modelo es de importación**, no DirectQuery: los datos quedan dentro del
   `.pbix`. Hay que actualizar manualmente tras correr el pipeline.
-- **`Calificacion promedio` cubre el 88% de las reseñas.** Solo Degusta publica la
+- **`Calificación promedio` cubre el 88% de las reseñas.** Solo Degusta publica la
   nota individual; las de RestaurantGuru vienen sin ella.
 - **El sentimiento viene calculado desde Python**, no de Power BI. Power BI no
   reprocesa el texto: consume `sentiment_*` y `mentions_*` del CSV.

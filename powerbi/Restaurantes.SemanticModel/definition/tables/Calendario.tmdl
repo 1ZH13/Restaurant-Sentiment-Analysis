@@ -1,0 +1,54 @@
+/// Tabla de fechas continua derivada del rango real de las resenas. Habilita las funciones de inteligencia de tiempo (tendencias, ano contra ano, acumulados) que el dashboard de Streamlit no ofrece.
+table Calendario
+	lineageTag: 5ee5c239-998b-4b41-9483-b2542c45d26f
+	dataCategory: Time
+
+	column Date
+		isUnique
+		lineageTag: eb2dd32c-9587-4792-978f-e4f5ee329a5a
+		isNameInferred
+		sourceColumn: [Date]
+
+	column Año
+		lineageTag: cbfea1c9-777e-43cb-ae7d-b4304acf6748
+		isNameInferred
+		sourceColumn: [Año]
+
+	column NúmeroMes
+		lineageTag: afd0d4bf-7a0f-4e93-b7db-c4a99601f929
+		isNameInferred
+		sourceColumn: [NúmeroMes]
+
+	column Mes
+		lineageTag: 4d01b8e8-9566-4c54-a5bb-87626d72e668
+		isNameInferred
+		sourceColumn: [Mes]
+
+	column AñoMes
+		lineageTag: b95cd0da-d806-431c-94e8-468c9fdfc3ff
+		isNameInferred
+		sourceColumn: [AñoMes]
+
+	column Trimestre
+		lineageTag: 058f9217-9bed-4fd7-8fea-32e928f8a0fc
+		isNameInferred
+		sourceColumn: [Trimestre]
+
+	column AñoTrimestre
+		lineageTag: 3b06a1c9-63ee-4939-8fc9-02228ead3240
+		isNameInferred
+		sourceColumn: [AñoTrimestre]
+
+	partition Calendario = calculated
+		mode: import
+		source =
+				ADDCOLUMNS(
+				    CALENDAR(DATE(YEAR(MIN(Reseñas[Fecha])), 1, 1), DATE(YEAR(MAX(Reseñas[Fecha])), 12, 31)),
+				    "Año", YEAR([Date]),
+				    "NúmeroMes", MONTH([Date]),
+				    "Mes", FORMAT([Date], "MMMM", "es-ES"),
+				    "AñoMes", FORMAT([Date], "yyyy-MM"),
+				    "Trimestre", "T" & FORMAT([Date], "Q"),
+				    "AñoTrimestre", FORMAT([Date], "yyyy") & "-T" & FORMAT([Date], "Q")
+				)
+
