@@ -1,0 +1,113 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "matrizComparativa",
+  "position": {
+    "x": 16,
+    "y": 142,
+    "z": 4000,
+    "height": 280,
+    "width": 752,
+    "tabOrder": 4000
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Restaurante"
+                }
+              },
+              "queryRef": "Restaurantes.Restaurante",
+              "nativeQueryRef": "Restaurante",
+              "active": true
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Sentimiento promedio"
+                }
+              },
+              "queryRef": "Aspectos.Sentimiento promedio",
+              "nativeQueryRef": "Sentimiento promedio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Sentimiento de su cocina"
+                }
+              },
+              "queryRef": "Aspectos.Sentimiento de su cocina",
+              "nativeQueryRef": "Sentimiento de su cocina"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Diferencia vs su cocina"
+                }
+              },
+              "queryRef": "Aspectos.Diferencia vs su cocina",
+              "nativeQueryRef": "Diferencia vs su cocina"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Ranking por sentimiento"
+                }
+              },
+              "queryRef": "Aspectos.Ranking por sentimiento",
+              "nativeQueryRef": "Ranking por sentimiento"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Total reseñas"
+                }
+              },
+              "queryRef": "Reseñas.Total reseñas",
+              "nativeQueryRef": "Total reseñas"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

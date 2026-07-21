@@ -1,0 +1,76 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "matrizCocinaSaldo",
+  "position": {
+    "x": 784,
+    "y": 142,
+    "z": 5000,
+    "height": 280,
+    "width": 480,
+    "tabOrder": 5000
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "CocinaPrincipal"
+                }
+              },
+              "queryRef": "Restaurantes.CocinaPrincipal",
+              "nativeQueryRef": "CocinaPrincipal",
+              "active": true
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Aspecto"
+                }
+              },
+              "queryRef": "Aspectos.Aspecto",
+              "nativeQueryRef": "Aspecto",
+              "active": true
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Saldo de opinión"
+                }
+              },
+              "queryRef": "Aspectos.Saldo de opinión",
+              "nativeQueryRef": "Saldo de opinión"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

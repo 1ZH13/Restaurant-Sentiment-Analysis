@@ -1,0 +1,75 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "dispersionVolumen",
+  "position": {
+    "x": 784,
+    "y": 438,
+    "z": 7000,
+    "height": 266,
+    "width": 480,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "scatterChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Restaurante"
+                }
+              },
+              "queryRef": "Restaurantes.Restaurante",
+              "nativeQueryRef": "Restaurante",
+              "active": true
+            }
+          ]
+        },
+        "X": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Diferencia vs su cocina"
+                }
+              },
+              "queryRef": "Aspectos.Diferencia vs su cocina",
+              "nativeQueryRef": "Diferencia vs su cocina"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Total reseñas"
+                }
+              },
+              "queryRef": "Reseñas.Total reseñas",
+              "nativeQueryRef": "Total reseñas"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

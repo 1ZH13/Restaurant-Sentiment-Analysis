@@ -1,0 +1,102 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "arbolDescomposicion",
+  "position": {
+    "x": 16,
+    "y": 438,
+    "z": 6000,
+    "height": 266,
+    "width": 1248,
+    "tabOrder": 6000
+  },
+  "visual": {
+    "visualType": "decompositionTreeVisual",
+    "query": {
+      "queryState": {
+        "Analyze": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Menciones negativas"
+                }
+              },
+              "queryRef": "Aspectos.Menciones negativas",
+              "nativeQueryRef": "Menciones negativas"
+            }
+          ]
+        },
+        "Explain By": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Zona"
+                }
+              },
+              "queryRef": "Restaurantes.Zona",
+              "nativeQueryRef": "Zona",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "CocinaPrincipal"
+                }
+              },
+              "queryRef": "Restaurantes.CocinaPrincipal",
+              "nativeQueryRef": "CocinaPrincipal",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "BandaPrecio"
+                }
+              },
+              "queryRef": "Restaurantes.BandaPrecio",
+              "nativeQueryRef": "BandaPrecio",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Aspecto"
+                }
+              },
+              "queryRef": "Aspectos.Aspecto",
+              "nativeQueryRef": "Aspecto",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

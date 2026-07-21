@@ -1,0 +1,39 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "segmentadorZona",
+  "position": {
+    "x": 528,
+    "y": 16,
+    "z": 2000,
+    "height": 110,
+    "width": 240,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Zona"
+                }
+              },
+              "queryRef": "Restaurantes.Zona",
+              "nativeQueryRef": "Zona",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

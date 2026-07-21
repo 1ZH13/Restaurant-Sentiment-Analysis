@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "tarjetaCobertura",
+  "position": {
+    "x": 272,
+    "y": 16,
+    "z": 1000,
+    "height": 110,
+    "width": 240,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Cobertura de menciones"
+                }
+              },
+              "queryRef": "Aspectos.Cobertura de menciones",
+              "nativeQueryRef": "Cobertura de menciones"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

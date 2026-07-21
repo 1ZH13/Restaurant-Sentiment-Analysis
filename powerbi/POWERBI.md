@@ -195,9 +195,10 @@ Ejemplo real del dataset: *Naked Lukas Obarrio* → mejor **Ambiente**, peor
 
 ---
 
-## 5. Páginas del informe propuestas
+## 5. Páginas del informe
 
-Las tres evitan deliberadamente repetir lo que ya está en Streamlit.
+Las tres están construidas y evitan deliberadamente repetir lo que ya está en
+Streamlit. Son 22 visuales en total.
 
 ### Página 1 — Evolución en el tiempo
 
@@ -222,13 +223,22 @@ Las tres evitan deliberadamente repetir lo que ya está en Streamlit.
 
 | Visual | Campos |
 |---|---|
-| Matriz | Filas `Restaurantes[Restaurante]` · Valores `Sentimiento promedio`, `Sentimiento de su cocina`, `Diferencia vs su cocina`, `Ranking por sentimiento` |
-| Gráfico de dispersión | X `Diferencia vs su cocina` · Y `Total reseñas` · Detalles `Restaurante` |
-| Barras | `Restaurante` ordenado por `Diferencia vs su cocina` (arriba y abajo) |
-| Matriz | Filas `Restaurantes[Zona]` · Columnas `Aspectos[Aspecto]` · Valor `Sentimiento promedio`, con formato condicional |
+| Segmentadores | `CocinaPrincipal`, `BandaPrecio`, `Zona` |
+| Tarjeta | `Total restaurantes` |
+| Matriz | Filas `Restaurante` · Valores `Sentimiento promedio`, `Sentimiento de su cocina`, `Diferencia vs su cocina`, `Ranking por sentimiento`, `Total reseñas` |
+| Barras | `Restaurante` por `Diferencia vs su cocina` |
+| Matriz | Filas `Zona` · Columnas `Aspecto` · Valor `Sentimiento promedio` |
+| Dispersión | X `Diferencia vs su cocina` · Y `Total reseñas` · Detalles `Restaurante` |
 
-La última matriz es **zona × aspecto**; el mapa de calor de Streamlit es
+La segunda matriz es **zona × aspecto**; el mapa de calor de Streamlit es
 **cocina × aspecto**. Distinto corte, distinta conclusión.
+
+La dispersión responde una pregunta que ninguna vista de Streamlit plantea:
+*¿los restaurantes que se despegan de sus pares tienen suficientes reseñas para
+creerles?* Los puntos muy a la izquierda o derecha con pocas reseñas son ruido.
+
+> Conviene aplicar un filtro de nivel de visual sobre `Total reseñas >= 5` en la
+> matriz y en las barras. Con 3 reseñas, un promedio no significa gran cosa.
 
 ### Página 3 — Dónde está el problema
 
@@ -240,11 +250,18 @@ La última matriz es **zona × aspecto**; el mapa de calor de Streamlit es
 | Barras | Eje `Aspectos[Aspecto]` · Valor `% negativas` |
 | Matriz | Filas `CocinaPrincipal` · Columnas `Aspecto` · Valor `Saldo de opinión` |
 | **Árbol de descomposición** | Analizar `Menciones negativas` · Explicar por `Zona`, `CocinaPrincipal`, `BandaPrecio`, `Aspecto` |
-| **Influenciadores clave** | Analizar `Aspectos[Sentimiento]` · Explicar por `BandaPrecio`, `Zona`, `CocinaPrincipal`, `Fuente` |
 | Tarjetas | `Restaurantes con quejas`, `Cobertura de menciones` |
+| Segmentador | `Aspecto` |
 
-El árbol de descomposición y los influenciadores clave son visuales **exclusivos
-de Power BI**: no se pueden reproducir en Streamlit sin programarlos a mano.
+El árbol de descomposición es un visual **exclusivo de Power BI**: permite abrir
+las menciones negativas por zona, cocina, banda de precio y aspecto en el orden
+que uno quiera, siguiendo la rama que más aporta. Reproducirlo en Streamlit
+implicaría programarlo entero.
+
+Un visual que vale la pena agregar a mano: **Influenciadores clave**, analizando
+`Aspectos[Sentimiento]` y explicando por `BandaPrecio`, `Zona` y
+`CocinaPrincipal`. No se incluyó en el archivo porque su configuración es más
+delicada de escribir a mano que de arrastrar en la interfaz.
 
 ---
 

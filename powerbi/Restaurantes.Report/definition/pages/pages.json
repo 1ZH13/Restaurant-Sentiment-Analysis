@@ -1,7 +1,9 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
   "pageOrder": [
-    "8937b621ae804d600322"
+    "8937b621ae804d600322",
+    "comparacionMercado",
+    "diagnosticoAspectos"
   ],
   "activePageName": "8937b621ae804d600322"
 }

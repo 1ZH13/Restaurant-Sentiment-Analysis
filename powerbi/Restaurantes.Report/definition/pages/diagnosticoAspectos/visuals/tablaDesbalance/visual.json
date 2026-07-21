@@ -1,0 +1,95 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "tablaDesbalance",
+  "position": {
+    "x": 16,
+    "y": 142,
+    "z": 4000,
+    "height": 280,
+    "width": 752,
+    "tabOrder": 4000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Restaurante"
+                }
+              },
+              "queryRef": "Restaurantes.Restaurante",
+              "nativeQueryRef": "Restaurante",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Mejor aspecto"
+                }
+              },
+              "queryRef": "Aspectos.Mejor aspecto",
+              "nativeQueryRef": "Mejor aspecto"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Peor aspecto"
+                }
+              },
+              "queryRef": "Aspectos.Peor aspecto",
+              "nativeQueryRef": "Peor aspecto"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Brecha entre aspectos"
+                }
+              },
+              "queryRef": "Aspectos.Brecha entre aspectos",
+              "nativeQueryRef": "Brecha entre aspectos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Reseñas"
+                    }
+                  },
+                  "Property": "Total reseñas"
+                }
+              },
+              "queryRef": "Reseñas.Total reseñas",
+              "nativeQueryRef": "Total reseñas"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

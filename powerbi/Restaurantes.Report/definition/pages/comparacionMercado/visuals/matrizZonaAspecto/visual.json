@@ -1,0 +1,76 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "matrizZonaAspecto",
+  "position": {
+    "x": 16,
+    "y": 438,
+    "z": 6000,
+    "height": 266,
+    "width": 752,
+    "tabOrder": 6000
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurantes"
+                    }
+                  },
+                  "Property": "Zona"
+                }
+              },
+              "queryRef": "Restaurantes.Zona",
+              "nativeQueryRef": "Zona",
+              "active": true
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Aspecto"
+                }
+              },
+              "queryRef": "Aspectos.Aspecto",
+              "nativeQueryRef": "Aspecto",
+              "active": true
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Aspectos"
+                    }
+                  },
+                  "Property": "Sentimiento promedio"
+                }
+              },
+              "queryRef": "Aspectos.Sentimiento promedio",
+              "nativeQueryRef": "Sentimiento promedio"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
