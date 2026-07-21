@@ -195,7 +195,9 @@ restaurant-sentiment-analysis/
 │   │   └── i18n.py
 │   └── views/                     # 6 páginas (render(df))
 ├── powerbi/
-│   ├── Restaurantes.pbip          # proyecto de Power BI (modelo + informe en texto)
+│   ├── Restaurantes.pbip          # proyecto de Power BI: se abre con Power BI Desktop
+│   ├── Restaurantes.SemanticModel/ # el modelo en TMDL (texto, revisable en git)
+│   ├── Restaurantes.Report/       # el informe en JSON (texto, revisable en git)
 │   └── POWERBI.md                 # documentación del modelo y sus medidas
 ├── tests/                         # pruebas unitarias + de dashboard + e2e
 ├── run_pipeline.py                # pipeline ETL+ML en un comando

@@ -255,7 +255,7 @@ de Power BI**: no se pueden reproducir en Streamlit sin programarlos a mano.
   dashboard: una barra debe decir sobre cuántas reseñas se apoya.
 - **Filtrar restaurantes con muy pocas reseñas** cuando se hagan rankings. Con 3
   reseñas el promedio es ruido. Se puede usar un filtro de nivel de visual sobre
-  `Total resenas >= 5`.
+  `Total reseñas >= 5`.
 - **No duplicar Streamlit.** Antes de agregar un visual, revisar la tabla de la
   sección 1.
 
@@ -268,7 +268,6 @@ de Power BI**: no se pueden reproducir en Streamlit sin programarlos a mano.
 | `Restaurantes.pbip` | **El entregable.** Se abre con Power BI Desktop |
 | `Restaurantes.SemanticModel/definition/` | El modelo en TMDL: una tabla por archivo, más relaciones y expresiones |
 | `Restaurantes.Report/definition/` | El informe en JSON: una carpeta por página y una por visual |
-| `Restaurantes.pbix` | Copia en formato clásico, por si alguien prefiere abrir un solo archivo |
 | `POWERBI.md` | Este documento |
 
 Se versiona el `.pbip` y no un `.tmdl` suelto a propósito: tener el modelo en dos
@@ -279,14 +278,20 @@ mirar ahí.
 Los archivos de `.pbi/` (caché de datos y ajustes de cada máquina) están
 excluidos en `.gitignore`.
 
+> **No conviene guardar también un `.pbix` junto al `.pbip`.** Se hizo al
+> principio y trajo problemas: los dos archivos tienen nombres que se
+> diferencian en una letra, y al abrir el que no era, Power BI cargaba un modelo
+> viejo y mostraba errores de campos inexistentes que parecían venir del
+> proyecto. Si alguien necesita un `.pbix` para entregarlo suelto, conviene
+> exportarlo fuera de esta carpeta.
+
 ---
 
 ## 8. Limitaciones conocidas
 
 - **La ruta de datos es absoluta.** Power BI no maneja rutas relativas; por eso
   existe el parámetro `RutaDatos`. Cada integrante debe ajustarlo una vez.
-- **El modelo es de importación**, no DirectQuery: los datos quedan dentro del
-  `.pbix`. Hay que actualizar manualmente tras correr el pipeline.
+- **El modelo es de importación**, no DirectQuery: los datos quedan dentro del proyecto. Hay que actualizar manualmente tras correr el pipeline.
 - **`Calificación promedio` cubre el 88% de las reseñas.** Solo Degusta publica la
   nota individual; las de RestaurantGuru vienen sin ella.
 - **El sentimiento viene calculado desde Python**, no de Power BI. Power BI no
