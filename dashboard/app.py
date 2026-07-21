@@ -21,6 +21,7 @@ from dashboard.views import (
     clustering,
     recomendaciones,
     detalle,
+    asistente,
 )
 from dashboard.utils.i18n import translate_dashboard_dataframe
 from src.sentiment.aspect_scores import derive_aspect_sentiment_scores
@@ -105,6 +106,8 @@ PAGES = [
             title="Recomendaciones", url_path="Recommendations"),
     st.Page(_page(detalle.render, "Detalle", SUBTITLE),
             title="Detalle", url_path="Detail"),
+    st.Page(_page(asistente.render, "Asistente", SUBTITLE),
+            title="Asistente", url_path="Assistant"),
 ]
 
 

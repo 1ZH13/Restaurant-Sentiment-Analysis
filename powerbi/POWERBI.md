@@ -54,20 +54,39 @@ actualizar en Power BI: el modelo lee los mismos CSV.
 
 ## 3. Estructura del modelo
 
-Esquema en estrella con una tabla de hechos principal:
+**Esquema en estrella.** Dos tablas de hechos, cada una con sus claves apuntando
+directamente a las dimensiones:
 
 ```
-                  ┌──────────────┐
-                  │ Calendario   │  (tabla de fechas, marcada como tal)
-                  └──────┬───────┘
-                         │ 1
-                         │
-                         ▼ *
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│ Restaurantes │──►│   Reseñas    │◄──│   Aspectos   │
-│  241 filas   │ 1 │  1108 filas  │ 1 │  4432 filas  │
-└──────────────┘  *└──────────────┘  *└──────────────┘
+              DIMENSIONES                        HECHOS
+
+        ┌────────────────┐
+        │  Restaurantes  │◄──────────────┐
+        │    241 filas   │◄────────┐     │
+        └────────────────┘         │     │
+                                   │     │
+        ┌────────────────┐    ┌────┴─────┴─────┐
+        │   Calendario   │◄───┤    Reseñas     │  1108 filas
+        │  fechas 19-26  │◄─┐ │  (una por      │
+        └────────────────┘  │ │   reseña)      │
+                            │ └────────────────┘
+        ┌────────────────┐  │
+        │    Aspecto     │◄─┼──┬──────────────┐
+        │    4 filas     │  │  │   Aspectos   │  4432 filas
+        └────────────────┘  └──┤ (una por     │
+                               │  reseña ×    │
+                               │  aspecto)    │
+                               └──────────────┘
 ```
+
+**Por qué `Aspectos` no cuelga de `Reseñas`.** En un diseño anterior, `Aspectos`
+se relacionaba con `Reseñas` y llegaba a las dimensiones a través de ella. Eso
+es una cadena hecho-a-hecho, no una estrella: encadenar tablas de hechos alarga
+la ruta de filtrado y complica el modelo.
+
+La solución fue llevar `RestauranteID` y `Fecha` **dentro** de `Aspectos` y
+agregar la dimensión `Aspecto`. Ahora cada hecho apunta directo a sus
+dimensiones, que es la definición de un modelo en estrella.
 
 ### `Restaurantes` — dimensión (241 filas)
 
@@ -114,6 +133,12 @@ La diferencia es grande: el precio se menciona solo en el **21,7%** de las
 reseñas. Promediando todo daría 0,06; promediando solo a quienes opinaron da
 **0,27**.
 
+### `Aspecto` — dimensión (4 filas)
+
+Una fila por aspecto analizado, con su descripción y un orden fijo para que los
+visuales no los listen alfabéticamente. Existe para que `Aspectos` apunte a una
+dimensión en lugar de repetir el texto del aspecto en sus 4432 filas.
+
 ### `Calendario` — dimensión de fechas
 
 Tabla calculada en DAX que cubre de enero de 2019 a diciembre de 2026 (derivado
@@ -122,15 +147,16 @@ inteligencia de tiempo.
 
 ### Relaciones
 
-| Desde | Hacia | Cardinalidad |
+| Desde (hecho) | Hacia (dimensión) | Cardinalidad |
 |---|---|---|
 | `Reseñas[RestauranteID]` | `Restaurantes[RestauranteID]` | * : 1 |
-| `Aspectos[ReseñaID]` | `Reseñas[ReseñaID]` | * : 1 |
 | `Reseñas[Fecha]` | `Calendario[Date]` | * : 1 |
+| `Aspectos[RestauranteID]` | `Restaurantes[RestauranteID]` | * : 1 |
+| `Aspectos[Fecha]` | `Calendario[Date]` | * : 1 |
+| `Aspectos[Aspecto]` | `Aspecto[Aspecto]` | * : 1 |
 
-`Aspectos` se conecta a `Restaurantes` **a través de** `Reseñas`, no directo. Si
-tuviera las dos relaciones se formaría un camino ambiguo y Power BI no sabría por
-cuál filtrar.
+Las cinco relaciones van de un hecho a una dimensión. No hay relaciones entre
+tablas de hechos, que es lo que distingue una estrella de un copo de nieve.
 
 ---
 

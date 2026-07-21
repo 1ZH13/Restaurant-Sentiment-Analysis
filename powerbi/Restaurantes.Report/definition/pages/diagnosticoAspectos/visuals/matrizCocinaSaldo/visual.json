@@ -39,13 +39,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Aspectos"
+                      "Entity": "Aspecto"
                     }
                   },
                   "Property": "Aspecto"
                 }
               },
-              "queryRef": "Aspectos.Aspecto",
+              "queryRef": "Aspecto.Aspecto",
               "nativeQueryRef": "Aspecto",
               "active": true
             }
@@ -71,6 +71,35 @@
         }
       }
     },
-    "drillFilterOtherVisuals": true
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Saldo de opinión por cocina y aspecto'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

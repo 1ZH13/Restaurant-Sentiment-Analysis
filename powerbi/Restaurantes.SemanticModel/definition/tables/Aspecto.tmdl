@@ -1,0 +1,40 @@
+/// Dimension de los cuatro aspectos que analiza el proyecto. Existe para que el modelo sea una estrella real: la tabla de hechos Aspectos apunta a esta dimension en lugar de repetir el texto del aspecto en cada fila.
+table Aspecto
+	lineageTag: 7f4c8e21-3a95-4b60-9d18-2e6b5a71c840
+
+	column Aspecto
+		dataType: string
+		lineageTag: 1d5b9c73-8e42-4a06-b357-9f2c4e81a6b3
+		summarizeBy: none
+		sourceColumn: Aspecto
+
+	/// Orden fijo para que los visuales no listen los aspectos alfabeticamente.
+	column Orden
+		dataType: int64
+		isHidden
+		lineageTag: 4a2e6f18-7c93-4d51-8b26-3e7f9a52c104
+		summarizeBy: none
+		sourceColumn: Orden
+
+	/// Cuanto habla de este aspecto una resena tipica. Sirve para explicar por que
+	/// el promedio de precio se apoya en muchas menos resenas que el de comida.
+	column Descripcion
+		dataType: string
+		lineageTag: 8b3d5a92-6f14-4e78-9c05-1a4b7e63d295
+		summarizeBy: none
+		sourceColumn: Descripcion
+
+	partition Aspecto = m
+		mode: import
+		source =
+				let
+				    Origen = #table(
+				        type table [Aspecto = text, Orden = Int64.Type, Descripcion = text],
+				        {
+				            {"Comida", 1, "Calidad, sabor y presentacion de los platos"},
+				            {"Servicio", 2, "Atencion del personal, rapidez y trato"},
+				            {"Precio", 3, "Relacion entre lo que se paga y lo que se recibe"},
+				            {"Ambiente", 4, "Local, decoracion, ruido y comodidad"}
+				        })
+				in
+				    Origen

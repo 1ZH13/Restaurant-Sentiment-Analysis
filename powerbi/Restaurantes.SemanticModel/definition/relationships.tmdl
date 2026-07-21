@@ -1,12 +1,24 @@
+/// Modelo en estrella: cada tabla de hechos apunta directamente a sus dimensiones.
+/// Aspectos es el hecho de grano mas fino (una fila por resena y aspecto) y por eso
+/// tiene sus propias claves hacia Restaurantes, Calendario y Aspecto, en lugar de
+/// colgar de la tabla Reseñas como en el diseño anterior.
+
 relationship Restaurantes_Reseñas
 	fromColumn: Reseñas.RestauranteID
 	toColumn: Restaurantes.RestauranteID
-
-relationship Reseñas_Aspectos
-	fromColumn: Aspectos.ReseñaID
-	toColumn: Reseñas.ReseñaID
 
 relationship Calendario_Reseñas
 	fromColumn: Reseñas.Fecha
 	toColumn: Calendario.Date
 
+relationship Restaurantes_Aspectos
+	fromColumn: Aspectos.RestauranteID
+	toColumn: Restaurantes.RestauranteID
+
+relationship Calendario_Aspectos
+	fromColumn: Aspectos.Fecha
+	toColumn: Calendario.Date
+
+relationship Aspecto_Aspectos
+	fromColumn: Aspectos.Aspecto
+	toColumn: Aspecto.Aspecto

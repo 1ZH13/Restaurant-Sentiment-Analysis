@@ -64,6 +64,10 @@ Las fechas van de 2019 a 2026. Para regenerar estas cifras: `python run_pipeline
   cercanía y registro de qué aspectos menciona cada reseña.
 - **Clustering K-Means** de restaurantes con *k* elegido por *silhouette score* y
   nombres de cluster derivados de lo que distingue a cada grupo.
+- **Clasificación supervisada** que predice si una reseña es positiva a partir de
+  su texto, entrenada contra la calificación en estrellas del propio reseñador.
+- **Asistente con LLM** (Google Gemini) para consultar los datos en lenguaje
+  natural y resumir las reseñas de un restaurante.
 - **Sistema de recomendación** basado en contenido (cocina, presupuesto, zona y
   aspectos prioritarios) con puntaje de coincidencia 0–100.
 - **Dashboard interactivo** de 6 páginas con filtros y búsqueda que afectan a
@@ -346,6 +350,7 @@ Seis páginas con navegación nativa (`st.navigation`):
 | **Agrupamiento** | Grupos con nombre descriptivo, perfiles, miembros de cada grupo, mapa calificación vs. sentimiento |
 | **Recomendaciones** | Formulario de preferencias (cocina, presupuesto, zona, aspectos) + recomendaciones con % de coincidencia |
 | **Detalle** | Vista individual con reseñas filtrables por sentimiento y por texto, y contraste entre la nota del sitio y el sentimiento calculado |
+| **Asistente** | Consultas en lenguaje natural sobre los datos y resúmenes de reseñas, generados con un LLM |
 
 **Filtros compartidos** (`dashboard/utils/filters.py`): búsqueda por nombre o
 cocina, cocina, rango de precio, zona, grupo y calificación mínima. El
@@ -387,7 +392,7 @@ garantías que se rompieron alguna vez y no deben volver a romperse:
 | Componente | Peso | Cómo se cumple |
 |------------|------|----------------|
 | **Pipeline de datos** | 30% | ETL funcional y documentado con **2 fuentes reales** (Degusta + RestaurantGuru), 997 reseñas de 207 restaurantes; unificación de identidad entre fuentes y deduplicación; reproducible con `run_pipeline.py` |
-| **Análisis ML** | 25% | Clustering K-Means por restaurante con *k* elegido por silhouette + análisis de sentimiento por aspecto con atribución por cercanía |
+| **Análisis ML** | 25% | Clustering K-Means por restaurante con *k* elegido por silhouette, **clasificación supervisada** de sentimiento (TF-IDF + regresión logística) comparada contra el léxico y contra un LLM, y análisis de sentimiento por aspecto. La justificación de cada modelo está en [docs/MODELOS.md](docs/MODELOS.md) |
 | **Dashboard** | 25% | 6 páginas interactivas en Streamlit; filtros y búsqueda que afectan a todos los gráficos; cada gráfico declara sobre cuántos datos se apoya |
 | **Documentación** | 20% | Este README + `PRD.md` + `docs/TECHNICAL_SPEC.md` + `docs/EXPLICACION_PROYECTO.md` + `powerbi/POWERBI.md` + docstrings |
 

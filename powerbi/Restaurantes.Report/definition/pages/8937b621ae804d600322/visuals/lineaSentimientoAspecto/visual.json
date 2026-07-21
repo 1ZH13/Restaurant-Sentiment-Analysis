@@ -39,13 +39,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Aspectos"
+                      "Entity": "Aspecto"
                     }
                   },
                   "Property": "Aspecto"
                 }
               },
-              "queryRef": "Aspectos.Aspecto",
+              "queryRef": "Aspecto.Aspecto",
               "nativeQueryRef": "Aspecto"
             }
           ]
@@ -70,6 +70,35 @@
         }
       }
     },
-    "drillFilterOtherVisuals": true
+    "drillFilterOtherVisuals": true,
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Evolución del sentimiento por aspecto'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }

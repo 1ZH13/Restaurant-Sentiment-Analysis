@@ -83,13 +83,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Aspectos"
+                      "Entity": "Aspecto"
                     }
                   },
                   "Property": "Aspecto"
                 }
               },
-              "queryRef": "Aspectos.Aspecto",
+              "queryRef": "Aspecto.Aspecto",
               "nativeQueryRef": "Aspecto",
               "active": true
             }
@@ -105,6 +105,33 @@
               "expr": {
                 "Literal": {
                   "Value": "3L"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'De dónde vienen las menciones negativas'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
                 }
               }
             }

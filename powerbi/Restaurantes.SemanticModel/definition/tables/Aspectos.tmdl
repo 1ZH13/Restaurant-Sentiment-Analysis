@@ -120,7 +120,7 @@ table Aspectos
 		lineageTag: 4ef0c039-249d-4924-8fe2-b99e182e2cb7
 
 	/// Restaurantes que acumulan al menos una mención negativa del aspecto seleccionado.
-	measure 'Restaurantes con quejas' = CALCULATE(DISTINCTCOUNT('Reseñas'[RestauranteID]), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
+	measure 'Restaurantes con quejas' = CALCULATE(DISTINCTCOUNT(Aspectos[RestauranteID]), Aspectos[Mencionado] = TRUE(), Aspectos[Sentimiento] = "Negativo")
 		formatString: #,0
 		displayFolder: 5 Desbalance
 		lineageTag: 087b93aa-2f9f-4fd8-964c-63a534d1f4e7
@@ -129,6 +129,19 @@ table Aspectos
 		dataType: int64
 		lineageTag: 22e3e5f2-32c0-4139-a4c6-e02244715c3b
 		sourceColumn: ReseñaID
+
+	/// Clave hacia la dimension Restaurantes. Se trae hasta aqui para que Aspectos
+	/// apunte directo a sus dimensiones, como exige un modelo en estrella.
+	column RestauranteID
+		dataType: string
+		lineageTag: 9c1f4a20-5b3e-4d71-8e62-1a4f7c93b501
+		sourceColumn: RestauranteID
+
+	/// Clave hacia la dimension Calendario.
+	column Fecha
+		dataType: dateTime
+		lineageTag: 3e8a7b14-6d2c-4f90-a731-5c8e2b46d907
+		sourceColumn: Fecha
 
 	column Aspecto
 		dataType: string
@@ -156,8 +169,8 @@ table Aspectos
 				let
 				    PorAspecto = (nombre as text, colEtiqueta as text, colPuntaje as text, colMencion as text) as table =>
 				        let
-				            Sel = Table.SelectColumns(DatosProcesados, {"ReseñaID", colEtiqueta, colPuntaje, colMencion}),
-				            Ren = Table.RenameColumns(Sel, {{colEtiqueta, "Sentimiento"}, {colPuntaje, "Puntaje"}, {colMencion, "Mencionado"}}),
+				            Sel = Table.SelectColumns(DatosProcesados, {"ReseñaID", "restaurant_id", "review_date", colEtiqueta, colPuntaje, colMencion}),
+				            Ren = Table.RenameColumns(Sel, {{"restaurant_id", "RestauranteID"}, {"review_date", "Fecha"}, {colEtiqueta, "Sentimiento"}, {colPuntaje, "Puntaje"}, {colMencion, "Mencionado"}}),
 				            Con = Table.AddColumn(Ren, "Aspecto", each nombre, type text)
 				        in
 				            Con,
@@ -169,8 +182,8 @@ table Aspectos
 				    }),
 				    Etiquetas = Table.TransformColumns(Todos, {{"Sentimiento", each if _ = "positive" then "Positivo" else if _ = "negative" then "Negativo" else "Neutral", type text}}),
 				    Logico = Table.TransformColumns(Etiquetas, {{"Mencionado", each _ = "True", type logical}}),
-				    Tipos = Table.TransformColumnTypes(Logico, {{"Puntaje", type number}}),
-				    Orden = Table.SelectColumns(Tipos, {"ReseñaID", "Aspecto", "Sentimiento", "Puntaje", "Mencionado"})
+				    Tipos = Table.TransformColumnTypes(Logico, {{"Puntaje", type number}, {"Fecha", type date}}),
+				    Orden = Table.SelectColumns(Tipos, {"ReseñaID", "RestauranteID", "Fecha", "Aspecto", "Sentimiento", "Puntaje", "Mencionado"})
 				in
 				    Orden
 
