@@ -53,5 +53,5 @@ def format_restaurant_label(row: pd.Series, show_reviews: bool = False) -> str:
     rating = f"{row['rating']:.1f}" if pd.notna(row.get("rating")) else "s/c"
     label = f"{rating} - {row['restaurant_name']}"
     if show_reviews and pd.notna(row.get("resenas")):
-        label += f" ({int(row['resenas'])} resenas)"
+        label += f" ({int(row['resenas'])} reseñas)"
     return label

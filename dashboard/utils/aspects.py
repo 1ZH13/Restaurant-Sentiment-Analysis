@@ -111,5 +111,5 @@ def coverage_note(summaries: List[Dict]) -> str:
         return ""
     parts = [f"{s['label']} {s['mentions']}" for s in summaries]
     total = summaries[0]["total"]
-    return (f"Promedios calculados solo sobre las resenas que mencionan cada aspecto "
+    return (f"Promedios calculados solo sobre las reseñas que mencionan cada aspecto "
             f"(de {total}): " + " · ".join(parts) + ".")

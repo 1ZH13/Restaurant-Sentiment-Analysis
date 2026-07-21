@@ -59,7 +59,7 @@ def render(df: pd.DataFrame):
 
 
 def _render_kpis(df: pd.DataFrame) -> None:
-    st.markdown("### Metricas clave")
+    st.markdown("### Métricas clave")
     col1, col2, col3, col4 = st.columns(4)
 
     ratings = df["overall_rating"].dropna() if "overall_rating" in df.columns else pd.Series(dtype=float)
@@ -72,17 +72,17 @@ def _render_kpis(df: pd.DataFrame) -> None:
         st.markdown(_kpi_card(f"{df['restaurant_id'].nunique()}", "Restaurantes", "#FF6B6B"),
                     unsafe_allow_html=True)
     with col2:
-        st.markdown(_kpi_card(f"{len(df)}", "Resenas", "#4ECDC4"), unsafe_allow_html=True)
+        st.markdown(_kpi_card(f"{len(df)}", "Reseñas", "#4ECDC4"), unsafe_allow_html=True)
     with col3:
         if avg_rating is None:
-            st.markdown(_kpi_card("s/d", "Calificacion promedio", "#A0AEC0"), unsafe_allow_html=True)
+            st.markdown(_kpi_card("s/d", "Calificación promedio", "#A0AEC0"), unsafe_allow_html=True)
         else:
             color = "#28a745" if avg_rating >= 4.5 else "#ffc107" if avg_rating >= 4 else "#dc3545"
-            st.markdown(_kpi_card(f"{avg_rating:.2f}", "Calificacion promedio", color),
+            st.markdown(_kpi_card(f"{avg_rating:.2f}", "Calificación promedio", color),
                         unsafe_allow_html=True)
             # State the coverage so the number is never read as covering everything.
             if len(ratings) < len(df):
-                st.caption(f"basado en {len(ratings)} de {len(df)} resenas con calificacion")
+                st.caption(f"basado en {len(ratings)} de {len(df)} reseñas con calificación")
     with col4:
         label = "Positivo" if avg_sentiment > 0.1 else "Neutral" if avg_sentiment > -0.1 else "Negativo"
         color = "#28a745" if avg_sentiment > 0.1 else "#ffc107" if avg_sentiment > -0.1 else "#dc3545"
@@ -90,11 +90,11 @@ def _render_kpis(df: pd.DataFrame) -> None:
 
 
 def _render_rating_charts(df: pd.DataFrame) -> None:
-    st.markdown("### Mejores restaurantes y distribucion de calificaciones")
+    st.markdown("### Mejores restaurantes y distribución de calificaciones")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### 10 mejores por calificacion")
+        st.markdown("#### 10 mejores por calificación")
         top = (
             df.dropna(subset=["overall_rating"])
               .groupby(["restaurant_id", "restaurant_name"], as_index=False)["overall_rating"]
@@ -113,18 +113,18 @@ def _render_rating_charts(df: pd.DataFrame) -> None:
                 marker_color="#4ECDC4",
                 text=[f"{v:.2f}" for v in top["overall_rating"]],
                 textposition="outside",
-                hovertemplate="%{y}<br>Calificacion: %{x:.2f}<extra></extra>",
+                hovertemplate="%{y}<br>Calificación: %{x:.2f}<extra></extra>",
             ))
             fig.update_layout(**_base_layout(
                 height=450,
                 yaxis=dict(autorange="reversed", title=""),
-                xaxis=dict(title="Calificacion", range=[0, 5.4]),
+                xaxis=dict(title="Calificación", range=[0, 5.4]),
                 margin=dict(l=10, r=10, t=10, b=10),
             ))
             st.plotly_chart(fig, width="stretch")
 
     with col2:
-        st.markdown("#### Distribucion de calificaciones")
+        st.markdown("#### Distribución de calificaciones")
         ratings = df["overall_rating"].dropna()
         if ratings.empty:
             st.info("No hay calificaciones disponibles con estos filtros.")
@@ -134,19 +134,19 @@ def _render_rating_charts(df: pd.DataFrame) -> None:
                 nbinsx=20,
                 marker_color="#FF6B6B",
                 opacity=0.85,
-                hovertemplate="Calificacion: %{x:.1f}<br>Resenas: %{y}<extra></extra>",
+                hovertemplate="Calificación: %{x:.1f}<br>Reseñas: %{y}<extra></extra>",
             ))
             fig.update_layout(**_base_layout(
                 height=450,
-                xaxis_title="Calificacion",
-                yaxis_title="Cantidad de resenas",
+                xaxis_title="Calificación",
+                yaxis_title="Cantidad de reseñas",
                 margin=dict(l=10, r=10, t=10, b=10),
             ))
             st.plotly_chart(fig, width="stretch")
 
 
 def _render_distribution_charts(df: pd.DataFrame) -> None:
-    st.markdown("### Distribucion por cocina, precio y zona")
+    st.markdown("### Distribución por cocina, precio y zona")
     col1, col2 = st.columns(2)
 
     category_col = "category_primary" if "category_primary" in df.columns else "category"
@@ -169,7 +169,7 @@ def _render_distribution_charts(df: pd.DataFrame) -> None:
                 fig.update_layout(**_base_layout(
                     height=400,
                     yaxis=dict(autorange="reversed", title=""),
-                    xaxis_title="Resenas",
+                    xaxis_title="Reseñas",
                     margin=dict(l=10, r=10, t=10, b=10),
                 ))
                 st.plotly_chart(fig, width="stretch")
@@ -192,13 +192,13 @@ def _render_distribution_charts(df: pd.DataFrame) -> None:
                 fig.update_layout(**_base_layout(
                     height=400,
                     xaxis_title="Rango de precio",
-                    yaxis_title="Resenas",
+                    yaxis_title="Reseñas",
                     margin=dict(l=10, r=10, t=10, b=10),
                 ))
                 st.plotly_chart(fig, width="stretch")
 
     if "location" in df.columns:
-        st.markdown("#### Zonas con mas resenas")
+        st.markdown("#### Zonas con mas reseñas")
         zones = df["location"].dropna().value_counts().head(12)
         if not zones.empty:
             fig = go.Figure(go.Bar(
@@ -211,7 +211,7 @@ def _render_distribution_charts(df: pd.DataFrame) -> None:
             fig.update_layout(**_base_layout(
                 height=350,
                 xaxis_title="Zona",
-                yaxis_title="Resenas",
+                yaxis_title="Reseñas",
                 margin=dict(l=10, r=10, t=10, b=10),
             ))
             st.plotly_chart(fig, width="stretch")
@@ -222,7 +222,7 @@ def _render_sentiment_charts(df: pd.DataFrame) -> None:
     if not summaries:
         return
 
-    st.markdown("### Analisis de sentimiento por aspecto")
+    st.markdown("### Análisis de sentimiento por aspecto")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -237,7 +237,7 @@ def _render_sentiment_charts(df: pd.DataFrame) -> None:
             textposition="auto",
             customdata=[[s["mentions"], s["coverage"] * 100] for s in summaries],
             hovertemplate="%{x}<br>Promedio: %{y:.2f}"
-                          "<br>%{customdata[0]} resenas lo mencionan (%{customdata[1]:.0f}%)<extra></extra>",
+                          "<br>%{customdata[0]} reseñas lo mencionan (%{customdata[1]:.0f}%)<extra></extra>",
         ))
         fig.update_layout(**_base_layout(
             height=400,
@@ -249,26 +249,26 @@ def _render_sentiment_charts(df: pd.DataFrame) -> None:
         st.caption(coverage_note(summaries))
 
     with col2:
-        st.markdown("#### Cuantas resenas hablan de cada aspecto")
+        st.markdown("#### Cuantas reseñas hablan de cada aspecto")
         fig = go.Figure(go.Bar(
             x=[s["label"] for s in summaries],
             y=[s["coverage"] * 100 for s in summaries],
             marker_color="#4ECDC4",
             text=[f"{s['coverage']*100:.0f}%" for s in summaries],
             textposition="auto",
-            hovertemplate="%{x}<br>%{y:.0f}% de las resenas<extra></extra>",
+            hovertemplate="%{x}<br>%{y:.0f}% de las reseñas<extra></extra>",
         ))
         fig.update_layout(**_base_layout(
             height=400,
-            yaxis=dict(title="% de resenas que lo mencionan", range=[0, 100]),
+            yaxis=dict(title="% de reseñas que lo mencionan", range=[0, 100]),
             xaxis_title="Aspecto",
             margin=dict(l=10, r=10, t=10, b=10),
         ))
         st.plotly_chart(fig, width="stretch")
         st.caption("El precio se comenta mucho menos que la comida: por eso su promedio "
-                   "se calcula sobre menos resenas.")
+                   "se calcula sobre menos reseñas.")
 
-    st.markdown("#### Distribucion general del sentimiento")
+    st.markdown("#### Distribución general del sentimiento")
     categories = sentiment_category(overall_sentiment(df)).value_counts()
     palette = {"Positivo": "#28a745", "Neutral": "#ffc107", "Negativo": "#dc3545"}
     fig = go.Figure(go.Pie(

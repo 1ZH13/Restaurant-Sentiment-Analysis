@@ -39,7 +39,7 @@ def render(df: pd.DataFrame):
         restaurants = restaurants[haystack.str.contains(needle, regex=False)]
 
     if restaurants.empty:
-        st.warning("Ningun restaurante coincide con esa busqueda.")
+        st.warning("Ningún restaurante coincide con esa búsqueda.")
         return
 
     lookup = restaurants.set_index("restaurant_id")

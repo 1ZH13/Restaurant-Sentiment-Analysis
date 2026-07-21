@@ -41,7 +41,7 @@ def render(df: pd.DataFrame):
     """Render the Sentiment Analysis page."""
 
     if not any(f"sentiment_{a}_score" in df.columns for a in ASPECTS):
-        st.warning("El analisis de sentimiento aun no se ha ejecutado.")
+        st.warning("El análisis de sentimiento aún no se ha ejecutado.")
         return
 
     filtered = render_filters(df, key_prefix="sentimiento")
@@ -85,7 +85,7 @@ def _render_kpis(data: pd.DataFrame) -> None:
             <div style="background-color: {color}26; padding: 16px; border-radius: 12px;
                         border-left: 4px solid {color};">
                 <h2 style="margin: 0; color: {color};">{pct:.1f}%</h2>
-                <p style="margin: 4px 0 0 0; color: #A0AEC0;">{label} ({count} resenas)</p>
+                <p style="margin: 4px 0 0 0; color: #A0AEC0;">{label} ({count} reseñas)</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -121,7 +121,7 @@ def _render_aspect_charts(data: pd.DataFrame) -> None:
             textposition="auto",
             customdata=[[s["mentions"], s["coverage"] * 100] for s in summaries],
             hovertemplate="%{x}<br>Promedio: %{y:.2f}"
-                          "<br>%{customdata[0]} resenas (%{customdata[1]:.0f}%)<extra></extra>",
+                          "<br>%{customdata[0]} reseñas (%{customdata[1]:.0f}%)<extra></extra>",
         ))
         fig.update_layout(**_layout(height=400, yaxis=dict(title="Sentimiento", range=[-1, 1])))
         st.plotly_chart(fig, width="stretch")
@@ -144,7 +144,7 @@ def _render_aspect_charts(data: pd.DataFrame) -> None:
                                  y=values, marker_color=color))
 
         fig.update_layout(**_layout(height=400, barmode="stack", showlegend=True,
-                                    yaxis_title="Resenas", legend=dict(orientation="h", y=-0.2)))
+                                    yaxis_title="Reseñas", legend=dict(orientation="h", y=-0.2)))
         st.plotly_chart(fig, width="stretch")
 
 
@@ -161,7 +161,7 @@ def _render_heatmap(data: pd.DataFrame) -> None:
     cuisines = counts[counts >= min_reviews].head(12).index.tolist()
 
     if not cuisines:
-        st.info(f"Ninguna cocina alcanza {min_reviews} resenas con estos filtros.")
+        st.info(f"Ninguna cocina alcanza {min_reviews} reseñas con estos filtros.")
         return
 
     matrix, labels, hover = [], [], []
@@ -177,7 +177,7 @@ def _render_heatmap(data: pd.DataFrame) -> None:
             mask = mention_mask(subset, aspect)
             values = subset.loc[mask, score_col].dropna()
             row.append(float(values.mean()) if len(values) else None)
-            hover_row.append(f"{len(values)} resenas")
+            hover_row.append(f"{len(values)} reseñas")
         matrix.append(row)
         hover.append(hover_row)
         labels.append(f"{cuisine} ({len(subset)})")
@@ -198,12 +198,12 @@ def _render_heatmap(data: pd.DataFrame) -> None:
                       font=dict(color="#FAFAFA"), height=460,
                       margin=dict(l=10, r=10, t=10, b=10))
     st.plotly_chart(fig, width="stretch")
-    st.caption(f"Solo se muestran cocinas con al menos {min_reviews} resenas. "
-               "Entre parentesis, el numero de resenas de cada cocina.")
+    st.caption(f"Solo se muestran cocinas con al menos {min_reviews} reseñas. "
+               "Entre paréntesis, el número de reseñas de cada cocina.")
 
 
 def _render_extreme_reviews(data: pd.DataFrame) -> None:
-    st.markdown("### Resenas destacadas")
+    st.markdown("### Reseñas destacadas")
     col1, col2 = st.columns(2)
 
     def _cards(subset: pd.DataFrame, color: str, empty_message: str) -> None:
@@ -226,11 +226,11 @@ def _render_extreme_reviews(data: pd.DataFrame) -> None:
 
     with col1:
         st.markdown("#### Mas positivas")
-        _cards(data.nlargest(5, "_sentiment"), "#28a745", "Sin resenas positivas destacadas.")
+        _cards(data.nlargest(5, "_sentiment"), "#28a745", "Sin reseñas positivas destacadas.")
 
     with col2:
         st.markdown("#### Mas negativas")
         negatives = data[data["_sentiment"] < 0].nsmallest(5, "_sentiment")
         _cards(negatives, "#dc3545",
-               "No hay resenas negativas con estos filtros. "
-               "Las resenas de estas fuentes son mayoritariamente positivas.")
+               "No hay reseñas negativas con estos filtros. "
+               "Las reseñas de estas fuentes son mayoritariamente positivas.")

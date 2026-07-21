@@ -66,4 +66,4 @@ class TestLabelFormatting:
     def test_review_count_is_optional(self):
         row = pd.Series({"restaurant_name": "Sushi Uno", "rating": 4.9, "resenas": 5})
         assert format_restaurant_label(row) == "4.9 - Sushi Uno"
-        assert format_restaurant_label(row, show_reviews=True) == "4.9 - Sushi Uno (5 resenas)"
+        assert format_restaurant_label(row, show_reviews=True) == "4.9 - Sushi Uno (5 reseñas)"

@@ -44,7 +44,7 @@ def render_filters(df: pd.DataFrame, key_prefix: str,
     The returned frame is what the caller must use for *all* of its charts and
     tables, so what the user selects is what the user sees.
     """
-    st.markdown("### Filtros y busqueda")
+    st.markdown("### Filtros y búsqueda")
 
     query = st.text_input(
         "Buscar restaurante",
@@ -79,7 +79,7 @@ def render_filters(df: pd.DataFrame, key_prefix: str,
             cluster_labels, selected_cluster = {}, ALL
 
     min_rating = st.slider(
-        "Calificacion minima", 0.0, 5.0, 0.0, 0.1, key=f"{key_prefix}_rating"
+        "Calificación minima", 0.0, 5.0, 0.0, 0.1, key=f"{key_prefix}_rating"
     )
 
     filtered = search_restaurants(df, query)
@@ -118,11 +118,11 @@ def _render_summary(full: pd.DataFrame, filtered: pd.DataFrame) -> None:
     n_reviews, n_restaurants = len(filtered), filtered["restaurant_id"].nunique()
 
     if n_reviews == 0:
-        st.warning("Ningun restaurante coincide con estos filtros. Prueba a relajarlos.")
+        st.warning("Ningún restaurante coincide con estos filtros. Prueba a relajarlos.")
         return
 
     pct = n_reviews / len(full) * 100 if len(full) else 0
     st.caption(
-        f"Mostrando **{n_restaurants} restaurantes** y **{n_reviews} resenas** "
+        f"Mostrando **{n_restaurants} restaurantes** y **{n_reviews} reseñas** "
         f"({pct:.0f}% del total de {len(full)})."
     )

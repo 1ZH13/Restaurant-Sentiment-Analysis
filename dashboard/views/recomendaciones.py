@@ -44,8 +44,8 @@ def render(df: pd.DataFrame):
 
     st.markdown("""
     <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-        <p style="margin: 0; color: #A0AEC0;">Contanos que buscas y combinamos tus preferencias
-        con el analisis de sentimiento de las resenas para ordenar los restaurantes.</p>
+        <p style="margin: 0; color: #A0AEC0;">Cuéntanos qué buscas y combinamos tus preferencias
+        con el análisis de sentimiento de las reseñas para ordenar los restaurantes.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -64,16 +64,16 @@ def render(df: pd.DataFrame):
                         .groupby(df[price_col].astype(str))["price_level"].min()
                         .sort_values())
             price_options = [p for p in levels.index if p in price_options]
-        selected_price = st.selectbox("Presupuesto maximo", [ANY] + price_options,
+        selected_price = st.selectbox("Presupuesto máximo", [ANY] + price_options,
                                       key="rec_price")
 
     col3, col4 = st.columns(2)
     with col3:
         selected_zone = st.selectbox("Zona", [ANY] + _options(df, "location"), key="rec_zone")
     with col4:
-        min_rating = st.slider("Calificacion minima", 0.0, 5.0, 4.0, 0.1, key="rec_rating")
+        min_rating = st.slider("Calificación minima", 0.0, 5.0, 4.0, 0.1, key="rec_rating")
 
-    st.markdown("#### Que es lo mas importante para vos?")
+    st.markdown("#### ¿Qué es lo más importante para ti?")
     aspect_cols = st.columns(len(ASPECT_CHOICES))
     priority_aspects = []
     defaults = {"comida": True, "servicio": True, "precio": False, "ambiente": False}
@@ -101,8 +101,8 @@ def render(df: pd.DataFrame):
 
         if candidates.empty:
             st.session_state.pop("rec_results", None)
-            st.warning(f"Ningun restaurante alcanza una calificacion de {min_rating:.1f}. "
-                       "Proba bajando el minimo.")
+            st.warning(f"Ningún restaurante alcanza una calificación de {min_rating:.1f}. "
+                       "Prueba bajando el mínimo.")
             return
 
         with st.spinner("Analizando restaurantes..."):
@@ -127,7 +127,7 @@ def render(df: pd.DataFrame):
         <div style="background-color: rgba(78, 205, 196, 0.1); padding: 24px; border-radius: 12px;
                     text-align: center; border: 1px dashed #4ECDC4;">
             <h4 style="color: #4ECDC4; margin: 0;">Listo para ayudarte</h4>
-            <p style="color: #A0AEC0; margin-top: 12px;">Elegi tus preferencias y presiona el boton.</p>
+            <p style="color: #A0AEC0; margin-top: 12px;">Elige tus preferencias y presiona el botón.</p>
         </div>
         """, unsafe_allow_html=True)
         return
@@ -135,12 +135,12 @@ def render(df: pd.DataFrame):
     recommendations = stored["recommendations"]
 
     if not recommendations:
-        st.warning("No se encontraron recomendaciones. Proba ajustando tus preferencias.")
+        st.warning("No se encontraron recomendaciones. Prueba ajustando tus preferencias.")
         return
 
     st.markdown("### Tus mejores recomendaciones")
     st.caption(f"Evaluamos {stored['evaluated']} restaurantes que cumplen "
-               f"la calificacion minima de {stored['min_rating']:.1f}.")
+               f"la calificación minima de {stored['min_rating']:.1f}.")
 
     # Tell the user when what they are looking at no longer matches the form.
     if stored["preferences"] != preferences or stored["min_rating"] != min_rating:
@@ -149,7 +149,7 @@ def render(df: pd.DataFrame):
 
     for i, rec in enumerate(recommendations, 1):
         color = "#28a745" if rec.match_score >= 80 else "#ffc107" if rec.match_score >= 60 else "#dc3545"
-        rating = f"{rec.overall_rating:.1f}/5.0" if rec.overall_rating else "sin calificacion"
+        rating = f"{rec.overall_rating:.1f}/5.0" if rec.overall_rating else "sin calificación"
         details = [d for d in (rec.category, rec.price_range) if d and d.lower() != "nan"]
 
         st.markdown(f"""

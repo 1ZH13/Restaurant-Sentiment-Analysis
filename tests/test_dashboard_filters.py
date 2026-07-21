@@ -90,13 +90,13 @@ class TestOverviewPageFilters:
     def test_search_narrows_the_page(self, app):
         """Typing a query must reduce what the page reports, not just a label."""
         caption_before = [c.value for c in app.caption]
-        assert any("resenas" in str(c) for c in caption_before)
+        assert any("reseñas" in str(c) for c in caption_before)
 
         app.text_input(key="overview_search").set_value("sushi").run()
         assert not app.exception
 
         captions_after = " ".join(str(c.value) for c in app.caption)
-        assert "resenas" in captions_after
+        assert "reseñas" in captions_after
         assert captions_after != " ".join(str(c) for c in caption_before), \
             "la busqueda no cambio el contenido de la pagina"
 

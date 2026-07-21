@@ -58,7 +58,7 @@ def render(df: pd.DataFrame):
         restaurants = restaurants[mask]
 
     if restaurants.empty:
-        st.warning("Ningun restaurante coincide con esa busqueda.")
+        st.warning("Ningún restaurante coincide con esa búsqueda.")
         return
 
     lookup = restaurants.set_index("restaurant_id")
@@ -133,7 +133,7 @@ def _render_header(rest_df: pd.DataFrame) -> None:
         st.markdown(f"""
         <div style="background-color: #1E2530; padding: 16px; border-radius: 12px; text-align: center;">
             <h1 style="margin: 0; color: #4ECDC4; font-size: 48px;">{len(rest_df)}</h1>
-            <p style="margin: 4px 0 0 0; color: #A0AEC0;">resenas</p>
+            <p style="margin: 4px 0 0 0; color: #A0AEC0;">reseñas</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -142,14 +142,14 @@ def _render_charts(rest_df: pd.DataFrame) -> None:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("#### Calificaciones de las resenas")
+        st.markdown("#### Calificaciones de las reseñas")
         # review_rating is the score the reviewer gave; overall_rating is the
         # restaurant's headline score and is identical on every row.
         source_col = "review_rating" if "review_rating" in rest_df.columns else "overall_rating"
         ratings = rest_df[source_col].dropna()
 
         if ratings.empty:
-            st.info("Este restaurante no tiene calificaciones por resena.")
+            st.info("Este restaurante no tiene calificaciones por reseña.")
         else:
             counts = ratings.value_counts().sort_index()
             fig = go.Figure(go.Bar(
@@ -162,12 +162,12 @@ def _render_charts(rest_df: pd.DataFrame) -> None:
             fig.update_layout(
                 plot_bgcolor=TRANSPARENT, paper_bgcolor=TRANSPARENT,
                 font=dict(color="#FAFAFA"), showlegend=False, height=350,
-                xaxis_title="Estrellas", yaxis_title="Resenas",
+                xaxis_title="Estrellas", yaxis_title="Reseñas",
                 margin=dict(l=10, r=10, t=10, b=10),
             )
             st.plotly_chart(fig, width="stretch")
             if source_col == "review_rating":
-                st.caption(f"{len(ratings)} de {len(rest_df)} resenas traen calificacion propia.")
+                st.caption(f"{len(ratings)} de {len(rest_df)} reseñas traen calificación propia.")
 
     with col2:
         st.markdown("#### Sentimiento por aspecto")
@@ -186,7 +186,7 @@ def _render_charts(rest_df: pd.DataFrame) -> None:
                 textposition="auto",
                 customdata=[[s["mentions"]] for s in summaries],
                 hovertemplate="%{x}<br>Promedio: %{y:.2f}"
-                              "<br>%{customdata[0]} resenas lo mencionan<extra></extra>",
+                              "<br>%{customdata[0]} reseñas lo mencionan<extra></extra>",
             ))
             fig.update_layout(
                 plot_bgcolor=TRANSPARENT, paper_bgcolor=TRANSPARENT,
@@ -212,7 +212,7 @@ def _render_site_ratings(rest_df: pd.DataFrame) -> None:
     if not available:
         return
 
-    st.markdown("#### Calificacion del sitio vs. sentimiento calculado")
+    st.markdown("#### Calificación del sitio vs. sentimiento calculado")
 
     rows = []
     for col, aspect in available:
@@ -224,16 +224,16 @@ def _render_site_ratings(rest_df: pd.DataFrame) -> None:
             "Aspecto": ASPECT_LABELS.get(aspect, aspect),
             "Sitio (0-5)": round(float(site_score), 2),
             "Sentimiento (-1 a 1)": round(float(computed), 2) if pd.notna(computed) else None,
-            "Resenas que lo mencionan": int(mask.sum()),
+            "Reseñas que lo mencionan": int(mask.sum()),
         })
 
     st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
     st.caption("La columna del sitio es la nota publicada por la fuente; la de sentimiento "
-               "es la que calcula nuestro analizador a partir del texto de las resenas.")
+               "es la que calcula nuestro analizador a partir del texto de las reseñas.")
 
 
 def _render_reviews(rest_df: pd.DataFrame) -> None:
-    st.markdown("### Resenas de clientes")
+    st.markdown("### Reseñas de clientes")
 
     reviews = rest_df.copy()
     reviews["_sentiment_score"] = overall_sentiment(reviews)
@@ -265,9 +265,9 @@ def _render_reviews(rest_df: pd.DataFrame) -> None:
     if "review_date" in reviews.columns:
         reviews = reviews.sort_values("review_date", ascending=False, na_position="last")
 
-    st.markdown(f"**Mostrando {len(reviews)} resena(s)**")
+    st.markdown(f"**Mostrando {len(reviews)} reseña(s)**")
     if reviews.empty:
-        st.info("Ninguna resena coincide con este filtro.")
+        st.info("Ninguna reseña coincide con este filtro.")
         return
 
     for _, review in reviews.iterrows():
