@@ -9,6 +9,7 @@ import time
 import signal
 import os
 from pathlib import Path
+from playwright.sync_api import expect
 
 
 @pytest.fixture(scope="module")
@@ -62,7 +63,7 @@ class TestDashboardOverview:
     def test_page_loads(self, page, streamlit_server):
         """Test that the dashboard page loads."""
         page.goto(streamlit_server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Check that page has content
         assert page.locator("body").inner_text() != ""
@@ -70,7 +71,7 @@ class TestDashboardOverview:
     def test_sidebar_navigation(self, page, streamlit_server):
         """Test that sidebar navigation works."""
         page.goto(streamlit_server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Check sidebar exists
         sidebar = page.locator("[data-testid='stSidebar']")
@@ -80,7 +81,7 @@ class TestDashboardOverview:
         """Test that warning is shown when no data."""
         # This test assumes fresh start - actual data may or may not be present
         page.goto(streamlit_server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Either data loads or warning shows
         body_text = page.locator("body").inner_text()
@@ -99,7 +100,7 @@ class TestDashboardPages:
     def test_overview_page(self, page):
         """Test Overview page loads."""
         page.goto(f"{self.server}")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Check for main heading or content
         content = page.locator("body").inner_text()
@@ -108,7 +109,7 @@ class TestDashboardPages:
     def test_comparison_page(self, page):
         """Test Comparison page loads."""
         page.goto(f"{self.server}/Comparison")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Check for selector
         content = page.locator("body").inner_text()
@@ -117,7 +118,7 @@ class TestDashboardPages:
     def test_sentiment_page(self, page):
         """Test Sentiment page loads."""
         page.goto(f"{self.server}/Sentiment")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         content = page.locator("body").inner_text()
         assert len(content) > 0
@@ -125,7 +126,7 @@ class TestDashboardPages:
     def test_clustering_page(self, page):
         """Test Clustering page loads."""
         page.goto(f"{self.server}/Clustering")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         content = page.locator("body").inner_text()
         assert len(content) > 0
@@ -133,7 +134,7 @@ class TestDashboardPages:
     def test_recommendations_page(self, page):
         """Test Recommendations page loads."""
         page.goto(f"{self.server}/Recommendations")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         content = page.locator("body").inner_text()
         assert len(content) > 0
@@ -141,7 +142,7 @@ class TestDashboardPages:
     def test_detail_page(self, page):
         """Test Detail page loads."""
         page.goto(f"{self.server}/Detail")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         content = page.locator("body").inner_text()
         assert len(content) > 0
@@ -159,7 +160,7 @@ class TestDashboardInteractions:
     def test_restaurant_selector_exists(self, page):
         """Test that restaurant selector exists on Detail page."""
         page.goto(f"{self.server}/Detail")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Look for selectbox (Streamlit uses specific selectors)
         selectboxes = page.locator("[data-testid='stSelectbox']")
@@ -168,7 +169,7 @@ class TestDashboardInteractions:
     def test_category_filter_exists(self, page):
         """Test that category filter exists on Recommendations page."""
         page.goto(f"{self.server}/Recommendations")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Look for selectbox elements
         selectboxes = page.locator("[data-testid='stSelectbox']")
@@ -177,7 +178,7 @@ class TestDashboardInteractions:
     def test_checkbox_interactions(self, page):
         """Test that checkbox interactions work."""
         page.goto(f"{self.server}/Recommendations")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Find and click checkboxes
         checkboxes = page.locator("[data-testid='stCheckbox']")
@@ -199,7 +200,7 @@ class TestDashboardPerformance:
         """Test that page loads within reasonable time."""
         start = time.time()
         page.goto(self.server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
         load_time = time.time() - start
 
         # Page should load within 10 seconds
@@ -208,12 +209,12 @@ class TestDashboardPerformance:
     def test_navigation_speed(self, page):
         """Test that navigation between pages is fast."""
         page.goto(self.server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Navigate to another page
         start = time.time()
         page.goto(f"{self.server}/Comparison")
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
         nav_time = time.time() - start
 
         # Navigation should be under 5 seconds
@@ -232,7 +233,7 @@ class TestDashboardDataDisplay:
     def test_charts_render(self, page):
         """Test that Plotly charts render."""
         page.goto(self.server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Look for plotly chart containers
         # Streamlit renders charts in iframes or specific divs
@@ -242,7 +243,7 @@ class TestDashboardDataDisplay:
     def test_metric_displays(self, page):
         """Test that metric displays work."""
         page.goto(self.server)
-        page.wait_for_load_state("networkidle", timeout=30)
+        page.wait_for_load_state("networkidle", timeout=30000)
 
         # Look for metric elements
         metrics = page.locator("[data-testid='stMetric']")
